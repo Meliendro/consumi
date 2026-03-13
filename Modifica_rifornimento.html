@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modifica Rifornimento | Meliendro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+            min-height: 100vh;
+        }
+        .apple-glass {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+        input {
+            background: rgba(255, 255, 255, 0.6) !important;
+            border: 1px solid rgba(255, 255, 255, 0.8) !important;
+            transition: all 0.3s;
+        }
+        input:focus {
+            background: white !important;
+            border-color: #3b82f6 !important;
+            ring: 2px;
+            ring-color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="p-6 md:p-12 flex justify-center items-center">
+
+<div class="max-w-xl w-full">
+    <div class="mb-8 text-center">
+        <span class="text-blue-600 font-bold tracking-[0.3em] text-[10px] uppercase">Editor Registro</span>
+        <h1 class="text-4xl font-extrabold text-[#102a43] tracking-tighter italic">Modifica Dati<span class="text-blue-500">.</span></h1>
+    </div>
+
+    <form id="edit-form" class="apple-glass rounded-[2.5rem] p-8 space-y-6">
+        <div class="grid grid-cols-2 gap-4">
+            <div class="col-span-2">
+                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 ml-1">Data Rifornimento</label>
+                <input type="date" id="DataRifornimento" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700 outline-none">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 ml-1">KM Attuali</label>
+                <input type="number" id="kmattuali" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700 outline-none" placeholder="es. 45000">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 ml-1">Litri Totali</label>
+                <input type="number" id="totlitri" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700 outline-none" placeholder="es. 45.50">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 ml-1">Importo (€)</label>
+                <input type="number" id="importototale" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700 outline-none" placeholder="es. 80.00">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 ml-1">Prezzo/L (€)</label>
+                <input type="number" id="costolitro" step="0.001" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700 outline-none" placeholder="es. 1.759">
+            </div>
+        </div>
+
+        <div class="flex gap-4 pt-4">
+            <button type="button" onclick="window.location.href='elenco.html'" class="flex-1 bg-white/50 hover:bg-white text-slate-500 font-bold p-4 rounded-2xl transition-all text-xs uppercase tracking-widest border border-white">
+                Annulla
+            </button>
+            <button type="submit" class="flex-2 bg-blue-600 hover:bg-blue-700 text-white font-black p-4 px-10 rounded-2xl shadow-lg shadow-blue-500/30 transition-all text-xs uppercase tracking-widest">
+                Salva Modifiche
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    const SB_URL = 'https://zddtqkvbmqpnxtsflexl.supabase.co'; 
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZHRxa3ZibXFwbnh0c2ZsZXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTIwMDcsImV4cCI6MjA4ODk4ODAwN30.irCKDABvILPdlDbHYrQ06gtPWaa6-95q5lNx2GGKQec';
+    const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+    // 1. Prendi l'ID dall'URL (es: ?id=123)
+    const urlParams = new URLSearchParams(window.location.search);
+    const recordId = urlParams.get('id');
+
+    async function caricaDati() {
+        if (!recordId) {
+            alert("ID mancante!");
+            window.location.href = 'elenco.html';
+            return;
+        }
+
+        const { data, error } = await supabaseClient
+            .from('consumi')
+            .select('*')
+            .eq('id', recordId)
+            .single();
+
+        if (error) {
+            console.error("Errore caricamento:", error);
+            return;
+        }
+
+        // 2. Riempi i campi
+        document.getElementById('DataRifornimento').value = data.DataRifornimento;
+        document.getElementById('kmattuali').value = data.kmattuali;
+        document.getElementById('totlitri').value = data.totlitri;
+        document.getElementById('importototale').value = data.importototale;
+        document.getElementById('costolitro').value = data.costolitro;
+    }
+
+    // 3. Salva le modifiche
+    document.getElementById('edit-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const updatedData = {
+            DataRifornimento: document.getElementById('DataRifornimento').value,
+            kmattuali: parseFloat(document.getElementById('kmattuali').value),
+            totlitri: parseFloat(document.getElementById('totlitri').value),
+            importototale: parseFloat(document.getElementById('importototale').value),
+            costolitro: parseFloat(document.getElementById('costolitro').value)
+        };
+
+        const { error } = await supabaseClient
+            .from('consumi')
+            .update(updatedData)
+            .eq('id', recordId);
+
+        if (error) {
+            alert("Errore durante il salvataggio: " + error.message);
+        } else {
+            window.location.href = 'elenco.html'; // Torna alla lista
+        }
+    });
+
+    window.onload = caricaDati;
+</script>
+
+</body>
+</html>
