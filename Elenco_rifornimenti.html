@@ -123,7 +123,7 @@
             const { data, error } = await supabaseClient
                 .from('consumi')
                 .select('*')
-                .order('DataRifornimento', { ascending: false });
+                .order('DataRifornimento', { ascending: false }); // Ordinamento Decrescente
 
             if (error) throw error;
             renderTable(data);
@@ -138,16 +138,15 @@
     function renderTable(lista) {
         const corpo = document.getElementById('tabella-corpo');
         let currentMonth = "";
-        let monthlyData = [];
 
-        // Funzione per inserire la riga dei totali mensili
         const insertMonthlySummary = (label, dataArr) => {
             if (dataArr.length === 0) return;
             
             const spesaMese = dataArr.reduce((a, b) => a + (b.importototale || 0), 0);
             const litriMese = dataArr.reduce((a, b) => a + (b.totlitri || 0), 0);
-            const kmMese = Math.max(...dataArr.map(o => o.kmattuali || 0)) - Math.min(...dataArr.map(o => o.kmattuali || 0));
-            const mediaMese = (spesaMese / litriMese).toFixed(3);
+            const kms = dataArr.map(o => o.kmattuali || 0);
+            const kmMese = Math.max(...kms) - Math.min(...kms);
+            const mediaMese = (spesaMese / (litriMese || 1)).toFixed(3);
 
             corpo.innerHTML += `
                 <tr class="month-divider">
@@ -166,19 +165,13 @@
             `;
         };
 
-        lista.forEach((item, index) => {
+        lista.forEach((item) => {
             const d = new Date(item.DataRifornimento);
             const monthLabel = d.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
             const dataF = d.toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', year:'2-digit'});
 
             if (monthLabel !== currentMonth) {
-                if (currentMonth !== "") {
-                    // Non inseriamo qui perché la lista è invertita (descendente)
-                    // La logica di raggruppamento in ordine decrescente richiede di visualizzare il titolo prima dei dati
-                }
                 currentMonth = monthLabel;
-                
-                // Filtriamo tutti i record di questo mese per calcolare i totali subito
                 const recordsDelMese = lista.filter(x => 
                     new Date(x.DataRifornimento).toLocaleString('it-IT', { month: 'long', year: 'numeric' }) === monthLabel
                 );
@@ -193,6 +186,9 @@
                     <td class="p-6 text-sm font-black text-emerald-600">€ ${item.importototale?.toFixed(2)}</td>
                     <td class="p-6 text-xs text-slate-400 font-medium italic">€ ${item.costolitro?.toFixed(3)}</td>
                     <td class="p-6 text-right space-x-2">
+                        <button onclick="window.location.href='Modifica_rifornimento.html?id=${item.id}'" class="btn-action hover:bg-blue-50 hover:text-blue-500 text-slate-400 border-transparent">
+                            <i class="fas fa-pen text-[10px]"></i>
+                        </button>
                         <button onclick="elimina(${item.id})" class="btn-action hover:bg-red-50 hover:text-red-500 text-slate-400 border-transparent">
                             <i class="fas fa-trash-alt text-xs"></i>
                         </button>
@@ -215,14 +211,15 @@
 
         const spesa = lista.reduce((a, b) => a + (b.importototale || 0), 0);
         const litri = lista.reduce((a, b) => a + (b.totlitri || 0), 0);
-        const kmMax = Math.max(...lista.map(o => o.kmattuali || 0));
-        const kmMin = Math.min(...lista.map(o => o.kmattuali || 0));
+        const kms = lista.map(o => o.kmattuali || 0);
+        const kmMax = Math.max(...kms);
+        const kmMin = Math.min(...kms);
 
         const cards = [
             { label: 'Spesa Totale', val: '€ ' + spesa.toLocaleString('it-IT', {minimumFractionDigits: 2}), color: '#3b82f6' },
             { label: 'Litri Totali', val: litri.toFixed(1) + ' L', color: '#10b981' },
             { label: 'Distanza', val: (kmMax - kmMin).toLocaleString() + ' KM', color: '#f59e0b' },
-            { label: 'Media/L', val: '€ ' + (spesa/litri).toFixed(3), color: '#8b5cf6' }
+            { label: 'Media/L', val: '€ ' + (spesa / (litri || 1)).toFixed(3), color: '#8b5cf6' }
         ];
 
         container.innerHTML = cards.map(c => `
