@@ -9,73 +9,44 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
-            min-height: 100vh;
-        }
-        .apple-glass {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-        }
-        input {
-            background: rgba(255, 255, 255, 0.6) !important;
-            border: 1px solid rgba(255, 255, 255, 0.8) !important;
-            transition: all 0.3s;
-        }
-        input:focus {
-            background: white !important;
-            border-color: #3b82f6 !important;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%); min-height: 100vh; }
+        .apple-glass { background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.6); border-radius: 3rem; }
     </style>
 </head>
 <body class="p-6 md:p-12 flex justify-center items-center">
 
 <div class="max-w-xl w-full">
     <div class="mb-8 text-center">
-        <span class="text-blue-600 font-bold tracking-[0.3em] text-[10px] uppercase">Editor Registro</span>
-        <h1 class="text-4xl font-extrabold text-[#102a43] tracking-tighter italic">Modifica Dati<span class="text-blue-500">.</span></h1>
+        <h1 class="text-4xl font-extrabold text-[#102a43] italic">Modifica Dati<span class="text-blue-500">.</span></h1>
     </div>
 
-    <form id="edit-form" class="apple-glass rounded-[3rem] p-10 space-y-6">
+    <form id="edit-form" class="apple-glass p-10 space-y-6">
         <div class="grid grid-cols-2 gap-5">
             <div class="col-span-2">
-                <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 ml-1">Data Rifornimento</label>
-                <input type="date" id="DataRifornimento" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
+                <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Data Rifornimento</label>
+                <input type="date" id="DataRifornimento" required class="w-full p-4 rounded-2xl text-sm font-bold bg-white/60 border border-white">
             </div>
-
             <div>
-                <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 ml-1">KM Attuali</label>
-                <input type="number" id="kmattuali" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
+                <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">KM Attuali</label>
+                <input type="number" id="kmattuali" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold bg-white/60 border border-white">
             </div>
-
             <div>
-                <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 ml-1">Litri Totali</label>
-                <input type="number" id="totlitri" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
+                <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Litri Totali</label>
+                <input type="number" id="totlitri" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold bg-white/60 border border-white">
             </div>
-
             <div>
-                <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 ml-1">Importo (€)</label>
-                <input type="number" id="importototale" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
+                <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Importo (€)</label>
+                <input type="number" id="importototale" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold bg-white/60 border border-white">
             </div>
-
             <div>
-                <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 ml-1">Prezzo/L (€)</label>
-                <input type="number" id="costolitro" step="0.001" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
+                <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Prezzo/L (€)</label>
+                <input type="number" id="costolitro" step="0.001" required class="w-full p-4 rounded-2xl text-sm font-bold bg-white/60 border border-white">
             </div>
         </div>
 
         <div class="flex gap-4 pt-6">
-            <button type="button" onclick="window.location.href='Elenco_rifornimenti.html'" class="flex-1 bg-white/50 hover:bg-white text-slate-500 font-bold p-4 rounded-2xl transition-all text-[10px] uppercase tracking-widest border border-white">
-                Annulla
-            </button>
-            <button type="submit" id="btn-salva" class="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-black p-4 rounded-2xl shadow-xl shadow-blue-500/20 transition-all text-[10px] uppercase tracking-widest">
-                Salva Modifiche
-            </button>
+            <button type="button" onclick="window.location.href='Elenco_rifornimenti.html'" class="flex-1 bg-white/50 text-slate-500 font-bold p-4 rounded-2xl text-[10px] uppercase border border-white">Annulla</button>
+            <button type="submit" id="btn-salva" class="flex-[2] bg-blue-600 text-white font-black p-4 rounded-2xl text-[10px] uppercase shadow-lg shadow-blue-500/20">Salva Modifiche</button>
         </div>
     </form>
 </div>
@@ -89,29 +60,17 @@
     const recordId = urlParams.get('id');
 
     async function caricaDati() {
-        if (!recordId) {
-            window.location.href = 'Elenco_rifornimenti.html';
-            return;
-        }
+        if (!recordId) { window.location.href = 'Elenco_rifornimenti.html'; return; }
+        
+        const { data, error } = await supabaseClient.from('consumi').select('*').eq('id', recordId).single();
+        
+        if (error) { alert("Errore caricamento: " + error.message); return; }
 
-        const { data, error } = await supabaseClient
-            .from('consumi')
-            .select('DataRifornimento, kmattuali, totlitri, importototale, costolitro')
-            .eq('id', recordId)
-            .single();
-
-        if (error) {
-            console.error("Errore download:", error);
-            alert("Record non trovato.");
-            return;
-        }
-
-        // Mapping esatto dei nomi colonne forniti
-        document.getElementById('DataRifornimento').value = data.DataRifornimento || '';
-        document.getElementById('kmattuali').value = data.kmattuali || '';
-        document.getElementById('totlitri').value = data.totlitri || '';
-        document.getElementById('importototale').value = data.importototale || '';
-        document.getElementById('costolitro').value = data.costolitro || '';
+        document.getElementById('DataRifornimento').value = data.DataRifornimento;
+        document.getElementById('kmattuali').value = data.kmattuali;
+        document.getElementById('totlitri').value = data.totlitri;
+        document.getElementById('importototale').value = data.importototale;
+        document.getElementById('costolitro').value = data.costolitro;
     }
 
     document.getElementById('edit-form').addEventListener('submit', async (e) => {
@@ -119,33 +78,43 @@
         const btn = document.getElementById('btn-salva');
         btn.innerText = "Salvataggio...";
         btn.disabled = true;
-        
-        // Costruzione oggetto con i nomi ESATTI forniti
-        const payload = {
-            DataRifornimento: document.getElementById('DataRifornimento').value,
-            kmattuali: parseFloat(document.getElementById('kmattuali').value),
-            totlitri: parseFloat(document.getElementById('totlitri').value),
-            importototale: parseFloat(document.getElementById('importototale').value),
-            costolitro: parseFloat(document.getElementById('costolitro').value)
+
+        const datiDaInviare = {
+            "DataRifornimento": document.getElementById('DataRifornimento').value,
+            "kmattuali": parseFloat(document.getElementById('kmattuali').value),
+            "totlitri": parseFloat(document.getElementById('totlitri').value),
+            "importototale": parseFloat(document.getElementById('importototale').value),
+            "costolitro": parseFloat(document.getElementById('costolitro').value)
         };
 
-        const { error } = await supabaseClient
-            .from('consumi')
-            .update(payload)
-            .eq('id', recordId);
+        try {
+            // Proviamo a forzare l'aggiornamento
+            const { data, error, status } = await supabaseClient
+                .from('consumi')
+                .update(datiDaInviare)
+                .eq('id', recordId)
+                .select();
 
-        if (error) {
-            console.error("Errore Supabase:", error);
-            alert("Errore durante il salvataggio: " + error.message);
+            if (error) {
+                throw error;
+            }
+
+            if (status === 200 || status === 204 || data) {
+                console.log("Salvataggio riuscito!");
+                window.location.href = 'Elenco_rifornimenti.html';
+            } else {
+                alert("Il database non ha risposto correttamente. Verifica i permessi RLS.");
+            }
+
+        } catch (err) {
+            console.error("Errore dettagliato:", err);
+            alert("ERRORE: " + (err.message || "Errore sconosciuto durante il salvataggio"));
             btn.innerText = "Salva Modifiche";
             btn.disabled = false;
-        } else {
-            window.location.href = 'Elenco_rifornimenti.html';
         }
     });
 
     window.onload = caricaDati;
 </script>
-
 </body>
 </html>
