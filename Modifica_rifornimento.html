@@ -45,27 +45,27 @@
         <div class="grid grid-cols-2 gap-5">
             <div class="col-span-2">
                 <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 ml-1">Data Rifornimento</label>
-                <input type="date" id="DataRifornimento" name="DataRifornimento" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
+                <input type="date" id="DataRifornimento" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
             </div>
 
             <div>
                 <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 ml-1">KM Attuali</label>
-                <input type="number" id="kmattuali" name="kmattuali" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
+                <input type="number" id="kmattuali" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
             </div>
 
             <div>
                 <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 ml-1">Litri Totali</label>
-                <input type="number" id="totlitri" name="totlitri" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
+                <input type="number" id="totlitri" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
             </div>
 
             <div>
                 <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 ml-1">Importo (€)</label>
-                <input type="number" id="importototale" name="importototale" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
+                <input type="number" id="importototale" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
             </div>
 
             <div>
                 <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 ml-1">Prezzo/L (€)</label>
-                <input type="number" id="costolitro" name="costolitro" step="0.001" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
+                <input type="number" id="costolitro" step="0.001" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
             </div>
         </div>
 
@@ -90,25 +90,24 @@
 
     async function caricaDati() {
         if (!recordId) {
-            alert("Nessun record selezionato!");
             window.location.href = 'Elenco_rifornimenti.html';
             return;
         }
 
         const { data, error } = await supabaseClient
             .from('consumi')
-            .select('*')
+            .select('DataRifornimento, kmattuali, totlitri, importototale, costolitro')
             .eq('id', recordId)
             .single();
 
         if (error) {
             console.error("Errore download:", error);
-            alert("Errore nel recupero dati: " + error.message);
+            alert("Record non trovato.");
             return;
         }
 
-        // Popolamento automatico flessibile (mappa sia maiuscole che minuscole)
-        document.getElementById('DataRifornimento').value = data.DataRifornimento || data.datarifornimento || '';
+        // Mapping esatto dei nomi colonne forniti
+        document.getElementById('DataRifornimento').value = data.DataRifornimento || '';
         document.getElementById('kmattuali').value = data.kmattuali || '';
         document.getElementById('totlitri').value = data.totlitri || '';
         document.getElementById('importototale').value = data.importototale || '';
@@ -118,10 +117,10 @@
     document.getElementById('edit-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('btn-salva');
-        btn.innerText = "Sincronizzazione...";
+        btn.innerText = "Salvataggio...";
         btn.disabled = true;
         
-        // Prepariamo i dati
+        // Costruzione oggetto con i nomi ESATTI forniti
         const payload = {
             DataRifornimento: document.getElementById('DataRifornimento').value,
             kmattuali: parseFloat(document.getElementById('kmattuali').value),
@@ -130,23 +129,18 @@
             costolitro: parseFloat(document.getElementById('costolitro').value)
         };
 
-        try {
-            // Tentativo di Update
-            const { error } = await supabaseClient
-                .from('consumi')
-                .update(payload)
-                .eq('id', recordId);
+        const { error } = await supabaseClient
+            .from('consumi')
+            .update(payload)
+            .eq('id', recordId);
 
-            if (error) throw error;
-
-            // Se arriviamo qui, il salvataggio è riuscito
-            window.location.href = 'Elenco_rifornimenti.html';
-
-        } catch (err) {
-            console.error("Errore salvataggio:", err);
-            alert("ERRORE DATABASE: " + err.message);
+        if (error) {
+            console.error("Errore Supabase:", error);
+            alert("Errore durante il salvataggio: " + error.message);
             btn.innerText = "Salva Modifiche";
             btn.disabled = false;
+        } else {
+            window.location.href = 'Elenco_rifornimenti.html';
         }
     });
 
