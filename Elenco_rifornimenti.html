@@ -11,7 +11,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
         
         :root {
-            --glass: rgba(255, 255, 255, 0.4);
+            --glass: rgba(255, 255, 255, 0.45);
             --glass-border: rgba(255, 255, 255, 0.6);
         }
 
@@ -31,49 +31,60 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
         }
 
-        .stats-card {
-            background: white;
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* Nuove Icone con stile Neumorfico/Glass */
+        /* Icone Gestione Minimal */
         .btn-mgmt {
-            width: 42px; height: 42px;
-            display: inline-flex; items-center; justify-center;
-            border-radius: 12px; transition: all 0.2s;
-            background: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 3px 3px 6px rgba(0,0,0,0.05), -2px -2px 5px rgba(255,255,255,0.9);
-            color: #64748b;
-        }
-
-        .btn-mgmt:hover {
-            transform: translateY(-2px);
-            box-shadow: 5px 5px 10px rgba(0,0,0,0.08);
-        }
-
-        .btn-edit:hover { color: #3b82f6; background: #eff6ff; }
-        .btn-delete:hover { color: #ef4444; background: #fef2f2; }
-
-        /* Riga Divisoria Mese Potenziata */
-        .month-summary-row {
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            items-center;
+            justify-center;
+            border-radius: 50%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             background: rgba(255, 255, 255, 0.5);
-            border-top: 2px solid #3b82f6;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .btn-edit { color: #3b82f6; }
+        .btn-edit:hover { 
+            background: #3b82f6; 
+            color: white; 
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-delete { color: #ef4444; }
+        .btn-delete:hover { 
+            background: #ef4444; 
+            color: white; 
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        /* Riepilogo Mese Potenziato */
+        .month-summary-row {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .month-pill {
+            background: white;
+            padding: 8px 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
 
         .month-label {
-            font-size: 1.1rem;
+            font-size: 1.25rem;
             font-weight: 800;
             color: #1e293b;
             text-transform: capitalize;
+            letter-spacing: -0.02em;
         }
 
         .month-stat-val {
-            font-size: 0.95rem;
-            font-weight: 700;
+            font-size: 1.1rem;
+            font-weight: 800;
             display: block;
+            line-height: 1;
         }
 
         .month-stat-label {
@@ -82,6 +93,8 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: #94a3b8;
+            margin-bottom: 2px;
+            display: block;
         }
     </style>
 </head>
@@ -133,7 +146,7 @@
     
     <div id="loading-state" class="text-center py-20">
         <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-blue-600 mb-4"></div>
-        <p class="text-slate-400 font-bold uppercase text-[9px] tracking-[0.3em]">Accesso Supabase...</p>
+        <p class="text-slate-400 font-bold uppercase text-[9px] tracking-[0.3em]">Caricamento dati...</p>
     </div>
 </div>
 
@@ -178,15 +191,27 @@
             const mediaMese = (spesaMese / (litriMese || 1)).toFixed(3);
 
             corpo.innerHTML += `
-                <tr class="month-summary-row">
+                <tr class="month-summary-row border-t border-white/40">
                     <td colspan="6" class="p-6">
                         <div class="flex flex-wrap items-center justify-between gap-6">
                             <span class="month-label">${label}</span>
-                            <div class="flex gap-8">
-                                <div><span class="month-stat-label">Spesa</span><span class="month-stat-val text-blue-600">€ ${spesaMese.toFixed(2)}</span></div>
-                                <div><span class="month-stat-label">Litri</span><span class="month-stat-val text-emerald-600">${litriMese.toFixed(1)} L</span></div>
-                                <div><span class="month-stat-label">Distanza</span><span class="month-stat-val text-amber-500">${kmMese} KM</span></div>
-                                <div><span class="month-stat-label">Media</span><span class="month-stat-val text-purple-600">€ ${mediaMese}</span></div>
+                            <div class="flex flex-wrap gap-4">
+                                <div class="month-pill">
+                                    <span class="month-stat-label">Spesa</span>
+                                    <span class="month-stat-val text-blue-600">€ ${spesaMese.toFixed(2)}</span>
+                                </div>
+                                <div class="month-pill">
+                                    <span class="month-stat-label">Litri</span>
+                                    <span class="month-stat-val text-emerald-600">${litriMese.toFixed(1)} L</span>
+                                </div>
+                                <div class="month-pill">
+                                    <span class="month-stat-label">Distanza</span>
+                                    <span class="month-stat-val text-amber-500">${kmMese} KM</span>
+                                </div>
+                                <div class="month-pill">
+                                    <span class="month-stat-label">Media</span>
+                                    <span class="month-stat-val text-purple-600">€ ${mediaMese}</span>
+                                </div>
                             </div>
                         </div>
                     </td>
@@ -208,19 +233,21 @@
             }
             
             corpo.innerHTML += `
-                <tr class="hover:bg-white/40 transition-colors border-b border-white/20">
+                <tr class="hover:bg-white/40 transition-colors border-b border-white/10">
                     <td class="p-6 text-sm font-bold text-[#243b53]">${dataF}</td>
                     <td class="p-6 text-sm font-mono text-blue-600 font-bold">${item.kmattuali?.toLocaleString()} <span class="text-[9px] text-slate-400 font-normal ml-1 uppercase">KM</span></td>
                     <td class="p-6 text-sm text-slate-600 font-semibold">${item.totlitri} <span class="text-[9px] text-slate-400 uppercase font-normal">L</span></td>
                     <td class="p-6 text-sm font-black text-emerald-600">€ ${item.importototale?.toFixed(2)}</td>
                     <td class="p-6 text-xs text-slate-400 font-medium italic">€ ${item.costolitro?.toFixed(3)}</td>
-                    <td class="p-6 text-right space-x-3">
-                        <button onclick="window.location.href='Modifica_rifornimento.html?id=${item.id}'" class="btn-mgmt btn-edit">
-                            <i class="fas fa-pencil-alt text-sm"></i>
-                        </button>
-                        <button onclick="elimina(${item.id})" class="btn-mgmt btn-delete">
-                            <i class="fas fa-trash-alt text-sm"></i>
-                        </button>
+                    <td class="p-6 text-right">
+                        <div class="flex justify-end gap-2">
+                            <button onclick="window.location.href='Modifica_rifornimento.html?id=${item.id}'" class="btn-mgmt btn-edit" title="Modifica">
+                                <i class="fas fa-pencil-alt text-xs"></i>
+                            </button>
+                            <button onclick="elimina(${item.id})" class="btn-mgmt btn-delete" title="Elimina">
+                                <i class="fas fa-trash-alt text-xs"></i>
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `;
