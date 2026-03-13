@@ -11,41 +11,54 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
         
         :root {
-            --glass: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass: rgba(255, 255, 255, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.6);
         }
 
         body { 
             font-family: 'Inter', sans-serif; 
-            background: radial-gradient(circle at top left, #1e293b, #0f172a);
-            color: #f8fafc; 
+            background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+            color: #334e68; 
             margin: 0;
-            min-height: 100 screen;
+            min-height: 100vh;
         }
 
+        /* Effetto Apple Glass Chiaro */
         .apple-glass {
             background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             border: 1px solid var(--glass-border);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
         }
 
         .stats-card {
-            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+            background: white;
             border: 1px solid var(--glass-border);
-            transition: transform 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .stats-card:hover { transform: translateY(-5px); }
-
-        .row-hover { transition: all 0.2s ease; }
-        .row-hover:hover { background: rgba(255, 255, 255, 0.05); }
+        .stats-card:hover { transform: translateY(-5px); box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08); }
 
         .btn-action {
-            width: 32px; height: 32px;
+            width: 34px; height: 34px;
             display: inline-flex; items-center; justify-center;
-            border-radius: 8px; transition: all 0.2s;
+            border-radius: 10px; transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid var(--glass-border);
+        }
+
+        /* Badge per il raggruppamento mese */
+        .month-divider {
+            background: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+            font-weight: 800;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            padding: 12px 24px;
+            border-left: 4px solid #3b82f6;
         }
     </style>
 </head>
@@ -54,47 +67,51 @@
 <div class="max-w-6xl mx-auto">
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
         <div>
-            <span class="text-blue-500 font-bold tracking-[0.3em] text-[10px] uppercase">Dashboard Veicolo</span>
-            <h1 class="text-5xl font-extrabold text-white tracking-tighter italic">
+            <span class="text-blue-600 font-bold tracking-[0.3em] text-[10px] uppercase">Registro Veicolo</span>
+            <h1 class="text-5xl font-extrabold text-[#102a43] tracking-tighter italic">
                 Meliendro <span class="text-blue-500 text-6xl">.</span>
             </h1>
         </div>
         
         <div class="flex flex-wrap gap-3">
-            <button onclick="window.location.href='Inserisci_rifornimento.html'" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-2xl shadow-blue-900/40 flex items-center">
-                <i class="fas fa-plus-circle mr-3 text-lg"></i> Nuovo Rifornimento
+            <button onclick="window.location.href='Inserisci_rifornimento.html'" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-blue-500/20 flex items-center">
+                <i class="fas fa-plus-circle mr-3 text-lg"></i> Nuovo
             </button>
-            <button onclick="fetchConsumi()" class="apple-glass hover:bg-white/10 text-white px-6 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all">
-                <i class="fas fa-redo-alt"></i>
+            
+            <button onclick="window.location.href='Riepilogo_statistiche.html'" class="apple-glass text-blue-600 hover:bg-white/50 px-6 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all flex items-center">
+                <i class="fas fa-chart-line mr-2 text-lg"></i> Statistiche
+            </button>
+
+            <button onclick="fetchConsumi()" class="apple-glass text-slate-500 hover:bg-white/50 px-5 py-4 rounded-2xl transition-all">
+                <i class="fas fa-sync-alt"></i>
             </button>
         </div>
     </div>
 
-    <div id="stats-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        </div>
+    <div id="stats-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"></div>
 
     <div class="apple-glass rounded-[2.5rem] overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="border-b border-white/5 bg-white/5">
+                    <tr class="bg-white/30 border-b border-white/50">
                         <th class="p-6 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Data</th>
-                        <th class="p-6 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Odissea KM</th>
+                        <th class="p-6 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Chilometri</th>
                         <th class="p-6 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Litri</th>
-                        <th class="p-6 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Totale</th>
+                        <th class="p-6 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Importo</th>
                         <th class="p-6 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Prezzo/L</th>
-                        <th class="p-6 text-right text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Azioni</th>
+                        <th class="p-6 text-right text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Gestione</th>
                     </tr>
                 </thead>
-                <tbody id="tabella-corpo" class="divide-y divide-white/5">
+                <tbody id="tabella-corpo">
                     </tbody>
             </table>
         </div>
     </div>
     
     <div id="loading-state" class="text-center py-20">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-        <p class="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Sincronizzazione Cloud...</p>
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-blue-600 mb-4"></div>
+        <p class="text-slate-400 font-bold uppercase text-[9px] tracking-[0.3em]">Accesso Supabase...</p>
     </div>
 </div>
 
@@ -119,7 +136,7 @@
             renderTable(data);
             renderStats(data);
         } catch (err) {
-            console.error("Errore Database:", err.message);
+            console.error(err.message);
         } finally {
             loader.classList.add('hidden');
         }
@@ -127,22 +144,32 @@
 
     function renderTable(lista) {
         const corpo = document.getElementById('tabella-corpo');
+        let currentMonth = "";
+
         lista.forEach(item => {
-            const dataF = item.DataRifornimento ? new Date(item.DataRifornimento).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', year:'2-digit'}) : '--';
+            const d = new Date(item.DataRifornimento);
+            const monthLabel = d.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
+            const dataF = d.toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', year:'2-digit'});
+
+            if (monthLabel !== currentMonth) {
+                currentMonth = monthLabel;
+                corpo.innerHTML += `
+                    <tr>
+                        <td colspan="6" class="month-divider">${currentMonth}</td>
+                    </tr>
+                `;
+            }
             
             corpo.innerHTML += `
-                <tr class="row-hover">
-                    <td class="p-6 text-sm font-semibold text-white/90">${dataF}</td>
-                    <td class="p-6 text-sm font-mono text-blue-400 font-bold">${item.kmattuali?.toLocaleString()} <span class="text-[9px] opacity-40 ml-1">KM</span></td>
-                    <td class="p-6 text-sm text-slate-300">${item.totlitri} <span class="text-[9px] opacity-40">L</span></td>
-                    <td class="p-6 text-sm font-black text-emerald-400">€ ${item.importototale?.toFixed(2)}</td>
-                    <td class="p-6 text-xs text-slate-500 italic">€ ${item.costolitro?.toFixed(3)}</td>
+                <tr class="hover:bg-white/40 transition-colors border-b border-white/20">
+                    <td class="p-6 text-sm font-bold text-[#243b53]">${dataF}</td>
+                    <td class="p-6 text-sm font-mono text-blue-600 font-bold">${item.kmattuali?.toLocaleString()} <span class="text-[9px] text-slate-400 font-normal ml-1 uppercase">KM</span></td>
+                    <td class="p-6 text-sm text-slate-600 font-semibold">${item.totlitri} <span class="text-[9px] text-slate-400 uppercase font-normal">L</span></td>
+                    <td class="p-6 text-sm font-black text-emerald-600">€ ${item.importototale?.toFixed(2)}</td>
+                    <td class="p-6 text-xs text-slate-400 font-medium italic">€ ${item.costolitro?.toFixed(3)}</td>
                     <td class="p-6 text-right space-x-2">
-                        <button onclick="modifica(${item.id})" class="btn-action bg-white/5 hover:bg-blue-500/20 text-blue-400">
-                            <i class="fas fa-pen text-xs"></i>
-                        </button>
-                        <button onclick="elimina(${item.id})" class="btn-action bg-white/5 hover:bg-red-500/20 text-red-400">
-                            <i class="fas fa-trash text-xs"></i>
+                        <button onclick="elimina(${item.id})" class="btn-action hover:bg-red-50 hover:text-red-500 text-slate-400 border-transparent">
+                            <i class="fas fa-trash-alt text-xs"></i>
                         </button>
                     </td>
                 </tr>
@@ -151,16 +178,10 @@
     }
 
     async function elimina(id) {
-        if(confirm("Sei sicuro di voler eliminare questo record?")) {
+        if(confirm("Vuoi rimuovere questo rifornimento?")) {
             const { error } = await supabaseClient.from('consumi').delete().eq('id', id);
             if (!error) fetchConsumi();
-            else alert("Errore durante l'eliminazione");
         }
-    }
-
-    function modifica(id) {
-        // Implementazione futura: apri pagina modifica con ID
-        alert("Funzione modifica ID #" + id + " in arrivo!");
     }
 
     function renderStats(lista) {
@@ -173,16 +194,16 @@
         const kmMin = Math.min(...lista.map(o => o.kmattuali || 0));
 
         const cards = [
-            { label: 'Spesa Totale', val: '€ ' + spesa.toFixed(2), color: 'border-blue-500' },
-            { label: 'Litri Caricati', val: litri.toFixed(1) + ' L', color: 'border-emerald-500' },
-            { label: 'KM Percorsi', val: (kmMax - kmMin).toLocaleString() + ' KM', color: 'border-amber-500' },
-            { label: 'Media Prezzo', val: '€ ' + (spesa/litri).toFixed(3) + '/L', color: 'border-purple-500' }
+            { label: 'Spesa Totale', val: '€ ' + spesa.toLocaleString('it-IT', {minimumFractionDigits: 2}), color: '#3b82f6' },
+            { label: 'Litri Totali', val: litri.toFixed(1) + ' L', color: '#10b981' },
+            { label: 'Distanza', val: (kmMax - kmMin).toLocaleString() + ' KM', color: '#f59e0b' },
+            { label: 'Media/L', val: '€ ' + (spesa/litri).toFixed(3), color: '#8b5cf6' }
         ];
 
         container.innerHTML = cards.map(c => `
-            <div class="stats-card p-8 rounded-[2rem] border-t-4 ${c.color}">
-                <p class="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">${c.label}</p>
-                <h2 class="text-2xl font-black text-white">${c.val}</h2>
+            <div class="stats-card p-7 rounded-[2rem]">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">${c.label}</p>
+                <h2 class="text-2xl font-black" style="color: ${c.color}">${c.val}</h2>
             </div>
         `).join('');
     }
