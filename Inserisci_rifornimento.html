@@ -21,7 +21,7 @@
 <div class="max-w-md w-full">
     <div class="text-center mb-8">
         <h1 class="text-3xl font-black text-white italic uppercase">New <span class="text-blue-500">Entry</span></h1>
-        <p class="text-slate-400 text-sm">Aggiungi un rifornimento al database</p>
+        <p class="text-slate-400 text-sm">Registra i dati del rifornimento</p>
     </div>
 
     <div class="form-card p-8 shadow-2xl">
@@ -38,32 +38,31 @@
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label>Importo (€)</label>
-                    <input type="number" step="0.01" id="importototale" placeholder="50.00" required class="w-full p-3 rounded-xl text-sm" oninput="calcolaCostoLitro()">
+                    <label>Importo Totale (€)</label>
+                    <input type="number" step="0.01" id="importototale" placeholder="50.00" required class="w-full p-3 rounded-xl text-sm" oninput="autoCalcolo('importo')">
                 </div>
                 <div>
-                    <label>Litri Totali</label>
-                    <input type="number" step="0.01" id="totlitri" placeholder="30.50" required class="w-full p-3 rounded-xl text-sm" oninput="calcolaCostoLitro()">
+                    <label>Costo al Litro (€/L)</label>
+                    <input type="number" step="0.001" id="costolitro" placeholder="1.750" required class="w-full p-3 rounded-xl text-sm" oninput="autoCalcolo('prezzo')">
                 </div>
             </div>
 
-            <div>
-                <label>Costo al Litro (€/L)</label>
-                <input type="number" step="0.001" id="costolitro" placeholder="1.750" required class="w-full p-3 rounded-xl text-sm bg-slate-800">
+            <div class="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50">
+                <label class="text-blue-400">Litri Calcolati</label>
+                <input type="number" step="0.01" id="totlitri" placeholder="0.00" required class="w-full p-3 rounded-xl text-sm font-bold text-blue-400" oninput="autoCalcolo('litri')">
+                <p class="text-[10px] text-slate-500 mt-2 uppercase tracking-tighter">Puoi modificare i litri manualmente se necessario</p>
             </div>
 
-            <div class="pt-4">
+            <div class="pt-4 flex flex-col gap-3">
                 <button type="submit" id="btnSalva" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-blue-900/30 uppercase tracking-widest text-xs">
-                    <i class="fas fa-save mr-2"></i>Salva Rifornimento
+                    <i class="fas fa-save mr-2"></i>Salva Dati
                 </button>
+                
+                <a href="Elenco_rifornimenti.html" class="w-full bg-slate-700 hover:bg-slate-600 text-white text-center font-bold py-3 rounded-2xl transition-all uppercase tracking-widest text-[10px]">
+                    <i class="fas fa-arrow-left mr-2"></i>Torna all'elenco
+                </a>
             </div>
         </form>
-    </div>
-
-    <div class="text-center mt-8">
-        <a href="Elenco_rifornimenti.html" class="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors">
-            <i class="fas fa-list-ul mr-2"></i>Torna all'elenco
-        </a>
     </div>
 </div>
 
@@ -72,16 +71,22 @@
     const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZHRxa3ZibXFwbnh0c2ZsZXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTIwMDcsImV4cCI6MjA4ODk4ODAwN30.irCKDABvILPdlDbHYrQ06gtPWaa6-95q5lNx2GGKQec';
     const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
-    // Imposta la data di oggi come predefinita
     document.getElementById('DataRifornimento').valueAsDate = new Date();
 
-    function calcolaCostoLitro() {
-        const importo = document.getElementById('importototale').value;
-        const litri = document.getElementById('totlitri').value;
-        const costoL = document.getElementById('costolitro');
+    // Logica di calcolo automatica
+    function autoCalcolo(origine) {
+        const importo = parseFloat(document.getElementById('importototale').value);
+        const prezzo = parseFloat(document.getElementById('costolitro').value);
+        const litri = parseFloat(document.getElementById('totlitri').value);
 
-        if (importo > 0 && litri > 0) {
-            costoL.value = (importo / litri).toFixed(3);
+        if (origine === 'importo' || origine === 'prezzo') {
+            if (importo > 0 && prezzo > 0) {
+                document.getElementById('totlitri').value = (importo / prezzo).toFixed(2);
+            }
+        } else if (origine === 'litri') {
+            if (importo > 0 && litri > 0) {
+                document.getElementById('costolitro').value = (importo / litri).toFixed(3);
+            }
         }
     }
 
@@ -89,7 +94,7 @@
         e.preventDefault();
         const btn = document.getElementById('btnSalva');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Salvataggio...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Invio in corso...';
 
         const record = {
             DataRifornimento: document.getElementById('DataRifornimento').value,
@@ -106,10 +111,10 @@
 
             if (error) throw error;
 
-            alert("Rifornimento salvato con successo!");
+            alert("Dati salvati correttamente!");
             window.location.href = 'Elenco_rifornimenti.html';
         } catch (err) {
-            alert("Errore durante il salvataggio: " + err.message);
+            alert("Errore: " + err.message);
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salva Rifornimento';
         }
