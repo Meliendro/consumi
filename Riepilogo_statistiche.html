@@ -82,24 +82,19 @@
             const monthKey = d.getFullYear() + "-" + (d.getMonth() + 1).toString().padStart(2, '0');
             const meseAnno = d.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
             const anno = d.getFullYear();
-            const km = parseFloat(item.kmattuali) || 0;
 
             if (!statsMensili[monthKey]) {
-                statsMensili[monthKey] = { label: meseAnno, spesa: 0, litri: 0, kmMin: km, kmMax: km, count: 0 };
+                statsMensili[monthKey] = { label: meseAnno, spesa: 0, litri: 0, count: 0 };
             }
             statsMensili[monthKey].spesa += (parseFloat(item.importototale) || 0);
             statsMensili[monthKey].litri += (parseFloat(item.totlitri) || 0);
-            statsMensili[monthKey].kmMin = Math.min(statsMensili[monthKey].kmMin, km);
-            statsMensili[monthKey].kmMax = Math.max(statsMensili[monthKey].kmMax, km);
             statsMensili[monthKey].count++;
 
             if (!statsAnnuali[anno]) {
-                statsAnnuali[anno] = { label: anno, spesa: 0, litri: 0, kmMin: km, kmMax: km, count: 0 };
+                statsAnnuali[anno] = { label: anno, spesa: 0, litri: 0, count: 0 };
             }
             statsAnnuali[anno].spesa += (parseFloat(item.importototale) || 0);
             statsAnnuali[anno].litri += (parseFloat(item.totlitri) || 0);
-            statsAnnuali[anno].kmMin = Math.min(statsAnnuali[anno].kmMin, km);
-            statsAnnuali[anno].kmMax = Math.max(statsAnnuali[anno].kmMax, km);
             statsAnnuali[anno].count++;
         });
 
@@ -117,27 +112,23 @@
             
             container.innerHTML += `
                 <div class="apple-glass p-6 rounded-[2.5rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-                    <div class="min-w-[160px]">
+                    <div class="min-w-[180px]">
                         <h3 class="text-xl font-black text-white capitalize">${s.label}</h3>
-                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${s.count} Pieni</p>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${s.count} Pieni Effettuati</p>
                     </div>
                     
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full text-center md:text-left">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
                         <div>
-                            <p class="text-[9px] font-black text-blue-500 uppercase tracking-tighter">Spesa Totale</p>
-                            <p class="text-lg font-black text-white">€ ${s.spesa.toFixed(2)}</p>
+                            <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">Spesa Totale</p>
+                            <p class="text-2xl font-black text-white">€ ${s.spesa.toFixed(2)}</p>
                         </div>
                         <div>
-                            <p class="text-[9px] font-black text-emerald-500 uppercase tracking-tighter">Litri Totali</p>
-                            <p class="text-lg font-bold text-slate-200">${s.litri.toFixed(1)} L</p>
+                            <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Litri Totali</p>
+                            <p class="text-2xl font-bold text-slate-200">${s.litri.toFixed(1)} <span class="text-sm font-normal text-slate-500">L</span></p>
                         </div>
                         <div>
-                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Odometro</p>
-                            <p class="text-sm font-bold text-slate-400">Inizio: ${s.kmMin.toLocaleString()}<br>Fine: ${s.kmMax.toLocaleString()}</p>
-                        </div>
-                        <div>
-                            <p class="text-[9px] font-black text-purple-500 uppercase tracking-tighter">Media €/L</p>
-                            <p class="text-lg font-bold text-slate-200">€ ${mediaPrezzo}</p>
+                            <p class="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-1">Media Carburante</p>
+                            <p class="text-2xl font-bold text-slate-200">€ ${mediaPrezzo}</p>
                         </div>
                     </div>
                 </div>
