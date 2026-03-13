@@ -24,7 +24,7 @@
 </head>
 <body class="p-6 md:p-12">
 
-<div class="max-w-5xl mx-auto">
+<div class="max-w-6xl mx-auto">
     <div class="flex items-center justify-between mb-12">
         <div>
             <h1 class="text-4xl font-black italic uppercase tracking-tighter">Report <span class="text-blue-500">Analitico</span></h1>
@@ -37,14 +37,12 @@
 
     <div class="mb-16">
         <h2 class="section-title mb-6">Analisi Mensile</h2>
-        <div id="container-mensile" class="grid grid-cols-1 gap-4">
-            </div>
+        <div id="container-mensile" class="grid grid-cols-1 gap-4"></div>
     </div>
 
     <div>
         <h2 class="section-title mb-6">Riepilogo Annuale</h2>
-        <div id="container-annuale" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            </div>
+        <div id="container-annuale" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
     </div>
 
     <div id="loader" class="text-center py-20">
@@ -74,74 +72,84 @@
     }
 
     function processData(data) {
+        if (!data || data.length === 0) return;
+
         const statsMensili = {};
         const statsAnnuali = {};
 
         data.forEach((item, index) => {
             const d = new Date(item.DataRifornimento);
+            const monthKey = d.getFullYear() + "-" + (d.getMonth() + 1).toString().padStart(2, '0'); // Per ordinamento corretto
             const meseAnno = d.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
             const anno = d.getFullYear();
 
-            // Calcolo KM percorsi (differenza col record precedente se esiste)
-            let kmPercorsi = 0;
+            // Calcolo KM percorsi nel periodo (Differenza tra questo record e il precedente assoluto)
+            let diffKM = 0;
             if (index > 0) {
-                kmPercorsi = item.kmattuali - data[index-1].kmattuali;
+                diffKM = item.kmattuali - data[index-1].kmattuali;
             }
 
-            // Raggruppamento Mensile
-            if (!statsMensili[meseAnno]) {
-                statsMensili[meseAnno] = { spesa: 0, litri: 0, km: 0, count: 0 };
+            // Inizializzazione Mensile
+            if (!statsMensili[monthKey]) {
+                statsMensili[monthKey] = { label: meseAnno, spesa: 0, litri: 0, kmPercorsi: 0, kmOdo: 0, count: 0 };
             }
-            statsMensili[meseAnno].spesa += item.importototale;
-            statsMensili[meseAnno].litri += item.totlitri;
-            statsMensili[meseAnno].km += kmPercorsi;
-            statsMensili[meseAnno].count++;
+            statsMensili[monthKey].spesa += item.importototale || 0;
+            statsMensili[monthKey].litri += item.totlitri || 0;
+            statsMensili[monthKey].kmPercorsi += diffKM;
+            statsMensili[monthKey].kmOdo = item.kmattuali; // L'ultimo record del mese aggiorna l'odometro finale
+            statsMensili[monthKey].count++;
 
-            // Raggruppamento Annuale
+            // Inizializzazione Annuale
             if (!statsAnnuali[anno]) {
-                statsAnnuali[anno] = { spesa: 0, litri: 0, km: 0, count: 0 };
+                statsAnnuali[anno] = { label: anno, spesa: 0, litri: 0, kmPercorsi: 0, kmOdo: 0, count: 0 };
             }
-            statsAnnuali[anno].spesa += item.importototale;
-            statsAnnuali[anno].litri += item.totlitri;
-            statsAnnuali[anno].km += kmPercorsi;
+            statsAnnuali[anno].spesa += item.importototale || 0;
+            statsAnnuali[anno].litri += item.totlitri || 0;
+            statsAnnuali[anno].kmPercorsi += diffKM;
+            statsAnnuali[anno].kmOdo = item.kmattuali;
             statsAnnuali[anno].count++;
         });
 
-        renderCharts(statsMensili, 'container-mensile', true);
-        renderCharts(statsAnnuali, 'container-annuale', false);
+        renderCharts(statsMensili, 'container-mensile');
+        renderCharts(statsAnnuali, 'container-annuale');
     }
 
-    function renderCharts(obj, containerId, isMonthly) {
+    function renderCharts(obj, containerId) {
         const container = document.getElementById(containerId);
         container.innerHTML = '';
 
-        Object.keys(obj).reverse().forEach(key => {
+        // Ordina le chiavi al contrario per vedere i dati più recenti in alto
+        Object.keys(obj).sort().reverse().forEach(key => {
             const s = obj[key];
-            const mediaPrezzo = (s.spesa / s.litri).toFixed(3);
-            const consumoMedio = s.km > 0 ? (s.km / s.litri).toFixed(2) : "N/D";
-
+            const mediaPrezzo = (s.spesa / (s.litri || 1)).toFixed(3);
+            
             container.innerHTML += `
-                <div class="apple-glass p-6 rounded-[2rem] flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div>
-                        <h3 class="text-xl font-bold text-white capitalize">${key}</h3>
-                        <p class="text-xs text-slate-500">${s.count} rifornimenti registrati</p>
+                <div class="apple-glass p-6 rounded-[2.5rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                    <div class="min-w-[180px]">
+                        <h3 class="text-xl font-black text-white capitalize">${s.label}</h3>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${s.count} Operazioni</p>
                     </div>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 w-full md:w-auto">
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-6 w-full">
                         <div>
-                            <p class="text-[9px] font-black text-blue-500 uppercase">Spesa</p>
+                            <p class="text-[9px] font-black text-blue-500 uppercase tracking-tighter">Spesa Totale</p>
                             <p class="text-lg font-black text-white">€ ${s.spesa.toFixed(2)}</p>
                         </div>
                         <div>
-                            <p class="text-[9px] font-black text-emerald-500 uppercase">Litri</p>
-                            <p class="text-lg font-bold text-slate-300">${s.litri.toFixed(1)} L</p>
+                            <p class="text-[9px] font-black text-emerald-500 uppercase tracking-tighter">Litri Totali</p>
+                            <p class="text-lg font-bold text-slate-200">${s.litri.toFixed(1)} L</p>
                         </div>
                         <div>
-                            <p class="text-[9px] font-black text-amber-500 uppercase">KM Percorsi</p>
-                            <p class="text-lg font-bold text-slate-300">${s.km} KM</p>
+                            <p class="text-[9px] font-black text-amber-500 uppercase tracking-tighter">KM nel Periodo</p>
+                            <p class="text-lg font-bold text-slate-200">${s.kmPercorsi.toLocaleString()} KM</p>
                         </div>
                         <div>
-                            <p class="text-[9px] font-black text-purple-500 uppercase">Media €/L</p>
-                            <p class="text-lg font-bold text-slate-300">€ ${mediaPrezzo}</p>
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Odometro Finale</p>
+                            <p class="text-lg font-bold text-blue-400/80">${s.kmOdo.toLocaleString()} <span class="text-[10px]">KM</span></p>
+                        </div>
+                        <div>
+                            <p class="text-[9px] font-black text-purple-500 uppercase tracking-tighter">Media €/L</p>
+                            <p class="text-lg font-bold text-slate-200">€ ${mediaPrezzo}</p>
                         </div>
                     </div>
                 </div>
