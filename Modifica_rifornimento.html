@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modifica Rifornimento | Meliendro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+            min-height: 100vh;
+            color: #334e68;
+        }
+
+        .apple-glass {
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        input {
+            background: rgba(255, 255, 255, 0.7) !important;
+            border: 1px solid rgba(255, 255, 255, 0.8) !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        input:focus {
+            background: white !important;
+            border-color: #3b82f6 !important;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body class="p-6 md:p-12 flex justify-center items-center">
+
+<div class="max-w-xl w-full">
+    <div class="mb-10 text-center">
+        <span class="text-blue-600 font-bold tracking-[0.3em] text-[10px] uppercase">Editor Registro</span>
+        <h1 class="text-5xl font-extrabold text-[#102a43] tracking-tighter italic">
+            Modifica<span class="text-blue-500 text-6xl">.</span>
+        </h1>
+    </div>
+
+    <form id="edit-form" class="apple-glass rounded-[3rem] p-10 space-y-8">
+        <div class="grid grid-cols-2 gap-6">
+            <div class="col-span-2">
+                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 ml-1">Data Rifornimento</label>
+                <input type="date" id="DataRifornimento" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 ml-1">KM Attuali</label>
+                <input type="number" id="kmattuali" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700" placeholder="0">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 ml-1">Litri Totali</label>
+                <input type="number" id="totlitri" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700" placeholder="0.00">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 ml-1">Importo Totale (€)</label>
+                <input type="number" id="importototale" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700" placeholder="0.00">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 ml-1">Prezzo/L (€)</label>
+                <input type="number" id="costolitro" step="0.001" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700" placeholder="0.000">
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4 pt-4">
+            <button type="button" onclick="window.location.href='Elenco_rifornimenti.html'" class="flex-1 bg-white/50 hover:bg-white text-slate-500 font-bold p-5 rounded-2xl transition-all text-xs uppercase tracking-widest border border-white">
+                <i class="fas fa-arrow-left mr-2"></i> Indietro
+            </button>
+            <button type="submit" id="btn-save" class="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-black p-5 rounded-2xl shadow-xl shadow-blue-500/20 transition-all text-xs uppercase tracking-widest">
+                Salva Modifiche
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Configurazione Supabase
+    const SB_URL = 'https://zddtqkvbmqpnxtsflexl.supabase.co'; 
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZHRxa3ZibXFwbnh0c2ZsZXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTIwMDcsImV4cCI6MjA4ODk4ODAwN30.irCKDABvILPdlDbHYrQ06gtPWaa6-95q5lNx2GGKQec';
+    const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+    // Recupero ID dall'indirizzo
+    const params = new URLSearchParams(window.location.search);
+    const recordId = params.get('id');
+
+    // Funzione Caricamento Dati
+    async function init() {
+        if (!recordId) {
+            alert("ID non trovato nell'URL!");
+            window.location.href = 'Elenco_rifornimenti.html';
+            return;
+        }
+
+        const { data, error } = await supabaseClient
+            .from('consumi')
+            .select('DataRifornimento, kmattuali, importototale, costolitro, totlitri')
+            .eq('id', recordId)
+            .single();
+
+        if (error) {
+            alert("Errore nel recupero del record: " + error.message);
+            window.location.href = 'Elenco_rifornimenti.html';
+            return;
+        }
+
+        if (data) {
+            document.getElementById('DataRifornimento').value = data.DataRifornimento || '';
+            document.getElementById('kmattuali').value = data.kmattuali || '';
+            document.getElementById('importototale').value = data.importototale || '';
+            document.getElementById('costolitro').value = data.costolitro || '';
+            document.getElementById('totlitri').value = data.totlitri || '';
+        }
+    }
+
+    // Evento Salvataggio
+    document.getElementById('edit-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const btn = document.getElementById('btn-save');
+        btn.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i> Salvataggio...';
+        btn.disabled = true;
+
+        const updatedFields = {
+            DataRifornimento: document.getElementById('DataRifornimento').value,
+            kmattuali: parseFloat(document.getElementById('kmattuali').value),
+            importototale: parseFloat(document.getElementById('importototale').value),
+            costolitro: parseFloat(document.getElementById('costolitro').value),
+            totlitri: parseFloat(document.getElementById('totlitri').value)
+        };
+
+        const { error } = await supabaseClient
+            .from('consumi')
+            .update(updatedFields)
+            .eq('id', recordId);
+
+        if (error) {
+            alert("Errore durante il salvataggio: " + error.message);
+            btn.innerHTML = 'Salva Modifiche';
+            btn.disabled = false;
+        } else {
+            // Successo! Ritorna all'elenco
+            window.location.href = 'Elenco_rifornimenti.html';
+        }
+    });
+
+    // Avvio
+    window.onload = init;
+</script>
+
+</body>
+</html>
