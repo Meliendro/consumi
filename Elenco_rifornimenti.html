@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Consumi Auto | Meliendro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #0f172a; color: #f8fafc; margin: 0; }
+        .glass-card { background: #1e293b; border: 1px solid #334155; }
+        .row-hover:hover { background-color: #334155; transition: 0.2s; }
+        .table-container { border-radius: 24px; overflow: hidden; border: 1px solid #334155; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+<div class="max-w-6xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
+        <div>
+            <h1 class="text-3xl font-black text-white tracking-tight italic uppercase">
+                Meliendro <span class="text-blue-500">AutoLog</span>
+            </h1>
+            <p class="text-slate-400 text-sm">Monitoraggio database Supabase - Tabella: consumi</p>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="fetchConsumi()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20">
+                <i class="fas fa-sync-alt mr-2"></i>Aggiorna
+            </button>
+            <button onclick="window.location.href='index.html'" class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all">
+                <i class="fas fa-arrow-left mr-2"></i>Indietro
+            </button>
+        </div>
+    </div>
+
+    <div id="stats-container" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+        </div>
+
+    <div class="table-container shadow-2xl bg-[#1e293b]">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-800/50 border-b border-slate-700">
+                        <th class="p-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Data Rifornimento</th>
+                        <th class="p-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">KM Attuali</th>
+                        <th class="p-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Litri</th>
+                        <th class="p-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Importo</th>
+                        <th class="p-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Costo/L</th>
+                        <th class="p-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">ID/Log</th>
+                    </tr>
+                </thead>
+                <tbody id="tabella-corpo" class="divide-y divide-slate-800">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div id="loading-state" class="text-center py-20">
+        <i class="fas fa-circle-notch fa-spin text-blue-500 text-4xl"></i>
+        <p class="mt-4 text-slate-500 font-bold uppercase text-xs tracking-widest">Accesso al database...</p>
+    </div>
+</div>
+
+<script>
+    const SB_URL = 'https://tdpmdloicnfqyixlxweh.supabase.co'; 
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcG1kbG9pY25mcXlpeGx4d2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMDgyODEsImV4cCI6MjA4NzU4NDI4MX0.EyPcvKFabIL_BX67S0MKLm4ccvHFr4Fiq3glt_iSJWg';
+    const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+    async function fetchConsumi() {
+        const corpo = document.getElementById('tabella-corpo');
+        const loader = document.getElementById('loading-state');
+        
+        corpo.innerHTML = '';
+        loader.classList.remove('hidden');
+
+        try {
+            const { data, error } = await supabaseClient
+                .from('consumi')
+                .select('*')
+                .order('DataRifornimento', { ascending: false });
+
+            if (error) throw error;
+
+            if (data) {
+                renderTable(data);
+                renderStats(data);
+            }
+        } catch (err) {
+            console.error("Errore Database:", err.message);
+        } finally {
+            loader.classList.add('hidden');
+        }
+    }
+
+    function renderTable(lista) {
+        const corpo = document.getElementById('tabella-corpo');
+        
+        lista.forEach(item => {
+            const dataF = item.DataRifornimento ? new Date(item.DataRifornimento).toLocaleDateString('it-IT', {day:'2-digit', month:'short', year:'numeric'}) : 'N/D';
+            
+            const row = `
+                <tr class="row-hover">
+                    <td class="p-5 text-sm font-bold text-slate-200">${dataF}</td>
+                    <td class="p-5 text-sm font-mono text-blue-400 font-bold">${item.kmattuali?.toLocaleString() || 0} <span class="text-[10px] text-slate-500">KM</span></td>
+                    <td class="p-5 text-sm text-slate-300 font-semibold">${item.totlitri || 0} <span class="text-[10px] text-slate-500">L</span></td>
+                    <td class="p-5 text-sm font-black text-emerald-400">€ ${item.importototale?.toFixed(2) || '0.00'}</td>
+                    <td class="p-5 text-xs text-slate-500">€ ${item.costolitro?.toFixed(3) || '0.000'}/L</td>
+                    <td class="p-5 text-[10px] font-mono text-slate-600">#${item.id}</td>
+                </tr>
+            `;
+            corpo.innerHTML += row;
+        });
+    }
+
+    function renderStats(lista) {
+        const container = document.getElementById('stats-container');
+        if (lista.length === 0) return;
+
+        const totaleSpeso = lista.reduce((acc, curr) => acc + (curr.importototale || 0), 0);
+        const totaleLitri = lista.reduce((acc, curr) => acc + (curr.totlitri || 0), 0);
+        const kmMax = Math.max(...lista.map(o => o.kmattuali || 0));
+        const kmMin = Math.min(...lista.map(o => o.kmattuali || 0));
+        const kmTotali = kmMax - kmMin;
+
+        container.innerHTML = `
+            <div class="glass-card p-6 rounded-[2rem] border-l-4 border-blue-500 shadow-xl">
+                <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Investimento Totale</p>
+                <h2 class="text-2xl font-black text-white mt-1">€ ${totaleSpeso.toFixed(2)}</h2>
+            </div>
+            <div class="glass-card p-6 rounded-[2rem] border-l-4 border-emerald-500 shadow-xl">
+                <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Carburante Totale</p>
+                <h2 class="text-2xl font-black text-white mt-1">${totaleLitri.toFixed(1)} <span class="text-xs font-normal text-slate-500 uppercase">Litri</span></h2>
+            </div>
+            <div class="glass-card p-6 rounded-[2rem] border-l-4 border-amber-500 shadow-xl">
+                <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Percorrenza Tracciata</p>
+                <h2 class="text-2xl font-black text-white mt-1">${kmTotali.toLocaleString()} <span class="text-xs font-normal text-slate-500 uppercase">KM</span></h2>
+            </div>
+            <div class="glass-card p-6 rounded-[2rem] border-l-4 border-purple-500 shadow-xl">
+                <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest">N. Rifornimenti</p>
+                <h2 class="text-2xl font-black text-white mt-1">${lista.length}</h2>
+            </div>
+        `;
+    }
+
+    window.onload = fetchConsumi;
+</script>
+
+</body>
+</html>
