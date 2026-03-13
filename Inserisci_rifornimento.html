@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuovo Rifornimento | Meliendro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #0f172a; color: #f8fafc; }
+        .form-card { background: #1e293b; border: 1px solid #334155; border-radius: 2rem; }
+        input { background: #0f172a !important; border: 1px solid #334155 !important; color: white !important; transition: 0.3s; }
+        input:focus { border-color: #3b82f6 !important; ring: 2px #3b82f6; outline: none; }
+        label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; tracking: 0.1em; color: #94a3b8; margin-bottom: 0.5rem; display: block; }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex items-center justify-center min-h-screen">
+
+<div class="max-w-md w-full">
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-black text-white italic uppercase">New <span class="text-blue-500">Entry</span></h1>
+        <p class="text-slate-400 text-sm">Aggiungi un rifornimento al database</p>
+    </div>
+
+    <div class="form-card p-8 shadow-2xl">
+        <form id="rifornimentoForm" class="space-y-5">
+            <div>
+                <label>Data Rifornimento</label>
+                <input type="date" id="DataRifornimento" required class="w-full p-3 rounded-xl text-sm">
+            </div>
+
+            <div>
+                <label>Chilometri Attuali</label>
+                <input type="number" id="kmattuali" placeholder="es. 45000" required class="w-full p-3 rounded-xl text-sm">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label>Importo (€)</label>
+                    <input type="number" step="0.01" id="importototale" placeholder="50.00" required class="w-full p-3 rounded-xl text-sm" oninput="calcolaCostoLitro()">
+                </div>
+                <div>
+                    <label>Litri Totali</label>
+                    <input type="number" step="0.01" id="totlitri" placeholder="30.50" required class="w-full p-3 rounded-xl text-sm" oninput="calcolaCostoLitro()">
+                </div>
+            </div>
+
+            <div>
+                <label>Costo al Litro (€/L)</label>
+                <input type="number" step="0.001" id="costolitro" placeholder="1.750" required class="w-full p-3 rounded-xl text-sm bg-slate-800">
+            </div>
+
+            <div class="pt-4">
+                <button type="submit" id="btnSalva" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-blue-900/30 uppercase tracking-widest text-xs">
+                    <i class="fas fa-save mr-2"></i>Salva Rifornimento
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="text-center mt-8">
+        <a href="Elenco_rifornimenti.html" class="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors">
+            <i class="fas fa-list-ul mr-2"></i>Torna all'elenco
+        </a>
+    </div>
+</div>
+
+<script>
+    const SB_URL = 'https://tdpmdloicnfqyixlxweh.supabase.co'; 
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcG1kbG9pY25mcXlpeGx4d2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMDgyODEsImV4cCI6MjA4NzU4NDI4MX0.EyPcvKFabIL_BX67S0MKLm4ccvHFr4Fiq3glt_iSJWg';
+    const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+    // Imposta la data di oggi come predefinita
+    document.getElementById('DataRifornimento').valueAsDate = new Date();
+
+    function calcolaCostoLitro() {
+        const importo = document.getElementById('importototale').value;
+        const litri = document.getElementById('totlitri').value;
+        const costoL = document.getElementById('costolitro');
+
+        if (importo > 0 && litri > 0) {
+            costoL.value = (importo / litri).toFixed(3);
+        }
+    }
+
+    document.getElementById('rifornimentoForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btnSalva');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Salvataggio...';
+
+        const record = {
+            DataRifornimento: document.getElementById('DataRifornimento').value,
+            kmattuali: parseInt(document.getElementById('kmattuali').value),
+            importototale: parseFloat(document.getElementById('importototale').value),
+            totlitri: parseFloat(document.getElementById('totlitri').value),
+            costolitro: parseFloat(document.getElementById('costolitro').value)
+        };
+
+        try {
+            const { error } = await supabaseClient
+                .from('consumi')
+                .insert([record]);
+
+            if (error) throw error;
+
+            alert("Rifornimento salvato con successo!");
+            window.location.href = 'Elenco_rifornimenti.html';
+        } catch (err) {
+            alert("Errore durante il salvataggio: " + err.message);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salva Rifornimento';
+        }
+    });
+</script>
+
+</body>
+</html>
