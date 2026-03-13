@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
         
         :root {
             --glass: rgba(255, 255, 255, 0.4);
@@ -38,21 +38,50 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .stats-card:hover { transform: translateY(-5px); box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08); }
-
-        .btn-action {
-            width: 34px; height: 34px;
+        /* Nuove Icone con stile Neumorfico/Glass */
+        .btn-mgmt {
+            width: 42px; height: 42px;
             display: inline-flex; items-center; justify-center;
-            border-radius: 10px; transition: all 0.2s;
-            background: rgba(255, 255, 255, 0.8);
-            border: 1px solid var(--glass-border);
+            border-radius: 12px; transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 3px 3px 6px rgba(0,0,0,0.05), -2px -2px 5px rgba(255,255,255,0.9);
+            color: #64748b;
         }
 
-        .month-divider {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(255, 255, 255, 0.8);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+        .btn-mgmt:hover {
+            transform: translateY(-2px);
+            box-shadow: 5px 5px 10px rgba(0,0,0,0.08);
+        }
+
+        .btn-edit:hover { color: #3b82f6; background: #eff6ff; }
+        .btn-delete:hover { color: #ef4444; background: #fef2f2; }
+
+        /* Riga Divisoria Mese Potenziata */
+        .month-summary-row {
+            background: rgba(255, 255, 255, 0.5);
+            border-top: 2px solid #3b82f6;
+        }
+
+        .month-label {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #1e293b;
+            text-transform: capitalize;
+        }
+
+        .month-stat-val {
+            font-size: 0.95rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .month-stat-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
         }
     </style>
 </head>
@@ -123,7 +152,7 @@
             const { data, error } = await supabaseClient
                 .from('consumi')
                 .select('*')
-                .order('DataRifornimento', { ascending: false }); // Ordinamento Decrescente
+                .order('DataRifornimento', { ascending: false });
 
             if (error) throw error;
             renderTable(data);
@@ -149,15 +178,15 @@
             const mediaMese = (spesaMese / (litriMese || 1)).toFixed(3);
 
             corpo.innerHTML += `
-                <tr class="month-divider">
-                    <td colspan="6" class="p-4 px-6">
-                        <div class="flex flex-wrap items-center justify-between gap-4">
-                            <span class="text-blue-600 font-extrabold uppercase tracking-widest text-xs">${label}</span>
-                            <div class="flex gap-6 text-[10px] font-bold uppercase tracking-tighter">
-                                <span>Spesa: <span class="text-slate-800">€${spesaMese.toFixed(2)}</span></span>
-                                <span>Litri: <span class="text-slate-800">${litriMese.toFixed(1)}L</span></span>
-                                <span>Dist: <span class="text-slate-800">${kmMese}km</span></span>
-                                <span>Media: <span class="text-slate-800">€${mediaMese}/L</span></span>
+                <tr class="month-summary-row">
+                    <td colspan="6" class="p-6">
+                        <div class="flex flex-wrap items-center justify-between gap-6">
+                            <span class="month-label">${label}</span>
+                            <div class="flex gap-8">
+                                <div><span class="month-stat-label">Spesa</span><span class="month-stat-val text-blue-600">€ ${spesaMese.toFixed(2)}</span></div>
+                                <div><span class="month-stat-label">Litri</span><span class="month-stat-val text-emerald-600">${litriMese.toFixed(1)} L</span></div>
+                                <div><span class="month-stat-label">Distanza</span><span class="month-stat-val text-amber-500">${kmMese} KM</span></div>
+                                <div><span class="month-stat-label">Media</span><span class="month-stat-val text-purple-600">€ ${mediaMese}</span></div>
                             </div>
                         </div>
                     </td>
@@ -185,12 +214,12 @@
                     <td class="p-6 text-sm text-slate-600 font-semibold">${item.totlitri} <span class="text-[9px] text-slate-400 uppercase font-normal">L</span></td>
                     <td class="p-6 text-sm font-black text-emerald-600">€ ${item.importototale?.toFixed(2)}</td>
                     <td class="p-6 text-xs text-slate-400 font-medium italic">€ ${item.costolitro?.toFixed(3)}</td>
-                    <td class="p-6 text-right space-x-2">
-                        <button onclick="window.location.href='Modifica_rifornimento.html?id=${item.id}'" class="btn-action hover:bg-blue-50 hover:text-blue-500 text-slate-400 border-transparent">
-                            <i class="fas fa-pen text-[10px]"></i>
+                    <td class="p-6 text-right space-x-3">
+                        <button onclick="window.location.href='Modifica_rifornimento.html?id=${item.id}'" class="btn-mgmt btn-edit">
+                            <i class="fas fa-pencil-alt text-sm"></i>
                         </button>
-                        <button onclick="elimina(${item.id})" class="btn-action hover:bg-red-50 hover:text-red-500 text-slate-400 border-transparent">
-                            <i class="fas fa-trash-alt text-xs"></i>
+                        <button onclick="elimina(${item.id})" class="btn-mgmt btn-delete">
+                            <i class="fas fa-trash-alt text-sm"></i>
                         </button>
                     </td>
                 </tr>
