@@ -42,7 +42,7 @@
 
     <div>
         <h2 class="section-title mb-6">Riepilogo Annuale</h2>
-        <div id="container-annuale" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        <div id="container-annuale" class="grid grid-cols-1 gap-4"></div>
     </div>
 
     <div id="loader" class="text-center py-20">
@@ -84,7 +84,6 @@
             const anno = d.getFullYear();
             const km = parseFloat(item.kmattuali) || 0;
 
-            // Logica Mensile
             if (!statsMensili[monthKey]) {
                 statsMensili[monthKey] = { label: meseAnno, spesa: 0, litri: 0, kmMin: km, kmMax: km, count: 0 };
             }
@@ -94,7 +93,6 @@
             statsMensili[monthKey].kmMax = Math.max(statsMensili[monthKey].kmMax, km);
             statsMensili[monthKey].count++;
 
-            // Logica Annuale
             if (!statsAnnuali[anno]) {
                 statsAnnuali[anno] = { label: anno, spesa: 0, litri: 0, kmMin: km, kmMax: km, count: 0 };
             }
@@ -115,7 +113,6 @@
 
         Object.keys(obj).sort().reverse().forEach(key => {
             const s = obj[key];
-            const kmmese = s.kmMax - s.kmMin; // Calcolo dei km nel periodo
             const mediaPrezzo = (s.spesa / (s.litri || 1)).toFixed(3);
             
             container.innerHTML += `
@@ -125,18 +122,14 @@
                         <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${s.count} Pieni</p>
                     </div>
                     
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 w-full text-center md:text-left">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full text-center md:text-left">
                         <div>
-                            <p class="text-[9px] font-black text-blue-500 uppercase tracking-tighter">Spesa</p>
+                            <p class="text-[9px] font-black text-blue-500 uppercase tracking-tighter">Spesa Totale</p>
                             <p class="text-lg font-black text-white">€ ${s.spesa.toFixed(2)}</p>
                         </div>
                         <div>
-                            <p class="text-[9px] font-black text-emerald-500 uppercase tracking-tighter">Litri</p>
+                            <p class="text-[9px] font-black text-emerald-500 uppercase tracking-tighter">Litri Totali</p>
                             <p class="text-lg font-bold text-slate-200">${s.litri.toFixed(1)} L</p>
-                        </div>
-                        <div>
-                            <p class="text-[9px] font-black text-amber-500 uppercase tracking-tighter">KM Mese</p>
-                            <p class="text-lg font-black text-amber-400">${kmmese.toLocaleString()} KM</p>
                         </div>
                         <div>
                             <p class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Odometro</p>
