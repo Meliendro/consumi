@@ -3,264 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log Consumi Auto | Meliendro</title>
+    <title>Modifica Rifornimento | Meliendro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
-        
-        :root {
-            --glass: rgba(255, 255, 255, 0.4);
-            --glass-border: rgba(255, 255, 255, 0.6);
-        }
-
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
         body { 
             font-family: 'Inter', sans-serif; 
             background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
-            color: #334e68; 
-            margin: 0;
             min-height: 100vh;
         }
-
         .apple-glass {
-            background: var(--glass);
+            background: rgba(255, 255, 255, 0.4);
             backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid var(--glass-border);
+            border: 1px solid rgba(255, 255, 255, 0.6);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
         }
-
-        .stats-card {
-            background: white;
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        input {
+            background: rgba(255, 255, 255, 0.6) !important;
+            border: 1px solid rgba(255, 255, 255, 0.8) !important;
+            transition: all 0.3s;
         }
-
-        /* Nuove Icone con stile Neumorfico/Glass */
-        .btn-mgmt {
-            width: 42px; height: 42px;
-            display: inline-flex; items-center; justify-center;
-            border-radius: 12px; transition: all 0.2s;
-            background: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 3px 3px 6px rgba(0,0,0,0.05), -2px -2px 5px rgba(255,255,255,0.9);
-            color: #64748b;
-        }
-
-        .btn-mgmt:hover {
-            transform: translateY(-2px);
-            box-shadow: 5px 5px 10px rgba(0,0,0,0.08);
-        }
-
-        .btn-edit:hover { color: #3b82f6; background: #eff6ff; }
-        .btn-delete:hover { color: #ef4444; background: #fef2f2; }
-
-        /* Riga Divisoria Mese Potenziata */
-        .month-summary-row {
-            background: rgba(255, 255, 255, 0.5);
-            border-top: 2px solid #3b82f6;
-        }
-
-        .month-label {
-            font-size: 1.1rem;
-            font-weight: 800;
-            color: #1e293b;
-            text-transform: capitalize;
-        }
-
-        .month-stat-val {
-            font-size: 0.95rem;
-            font-weight: 700;
-            display: block;
-        }
-
-        .month-stat-label {
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #94a3b8;
+        input:focus {
+            background: white !important;
+            border-color: #3b82f6 !important;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
     </style>
 </head>
-<body class="p-4 md:p-10">
+<body class="p-6 md:p-12 flex justify-center items-center">
 
-<div class="max-w-6xl mx-auto">
-    <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-        <div>
-            <span class="text-blue-600 font-bold tracking-[0.3em] text-[10px] uppercase">Registro Veicolo</span>
-            <h1 class="text-5xl font-extrabold text-[#102a43] tracking-tighter italic">
-                Meliendro <span class="text-blue-500 text-6xl">.</span>
-            </h1>
-        </div>
-        
-        <div class="flex flex-wrap gap-3">
-            <button onclick="window.location.href='Inserisci_rifornimento.html'" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-blue-500/20 flex items-center">
-                <i class="fas fa-plus-circle mr-3 text-lg"></i> Nuovo
-            </button>
-            
-            <button onclick="window.location.href='Riepilogo_statistiche.html'" class="apple-glass text-blue-600 hover:bg-white/50 px-6 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all flex items-center">
-                <i class="fas fa-chart-line mr-2 text-lg"></i> Statistiche
-            </button>
-
-            <button onclick="fetchConsumi()" class="apple-glass text-slate-500 hover:bg-white/50 px-5 py-4 rounded-2xl transition-all">
-                <i class="fas fa-sync-alt"></i>
-            </button>
-        </div>
+<div class="max-w-xl w-full">
+    <div class="mb-8 text-center">
+        <span class="text-blue-600 font-bold tracking-[0.3em] text-[10px] uppercase">Editor Registro</span>
+        <h1 class="text-4xl font-extrabold text-[#102a43] tracking-tighter italic">Modifica Dati<span class="text-blue-500">.</span></h1>
     </div>
 
-    <div id="stats-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"></div>
+    <form id="edit-form" class="apple-glass rounded-[2.5rem] p-8 space-y-6">
+        <div class="grid grid-cols-2 gap-4">
+            <div class="col-span-2">
+                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 ml-1">Data Rifornimento</label>
+                <input type="date" id="DataRifornimento" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
+            </div>
 
-    <div class="apple-glass rounded-[2.5rem] overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-white/30 border-b border-white/50">
-                        <th class="p-6 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Data</th>
-                        <th class="p-6 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Chilometri</th>
-                        <th class="p-6 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Litri</th>
-                        <th class="p-6 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Importo</th>
-                        <th class="p-6 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Prezzo/L</th>
-                        <th class="p-6 text-right text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Gestione</th>
-                    </tr>
-                </thead>
-                <tbody id="tabella-corpo"></tbody>
-            </table>
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 ml-1">KM Attuali</label>
+                <input type="number" id="kmattuali" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 ml-1">Litri Totali</label>
+                <input type="number" id="totlitri" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 ml-1">Importo (€)</label>
+                <input type="number" id="importototale" step="any" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 ml-1">Prezzo/L (€)</label>
+                <input type="number" id="costolitro" step="0.001" required class="w-full p-4 rounded-2xl text-sm font-bold text-slate-700">
+            </div>
         </div>
-    </div>
-    
-    <div id="loading-state" class="text-center py-20">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-blue-600 mb-4"></div>
-        <p class="text-slate-400 font-bold uppercase text-[9px] tracking-[0.3em]">Accesso Supabase...</p>
-    </div>
+
+        <div class="flex gap-4 pt-4">
+            <button type="button" onclick="window.location.href='Elenco_rifornimenti.html'" class="flex-1 bg-white/50 hover:bg-white text-slate-500 font-bold p-4 rounded-2xl transition-all text-xs uppercase tracking-widest border border-white">
+                Annulla
+            </button>
+            <button type="submit" id="btn-salva" class="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-black p-4 px-10 rounded-2xl shadow-lg shadow-blue-500/30 transition-all text-xs uppercase tracking-widest">
+                Salva Modifiche
+            </button>
+        </div>
+    </form>
 </div>
 
 <script>
     const SB_URL = 'https://zddtqkvbmqpnxtsflexl.supabase.co'; 
     const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZHRxa3ZibXFwbnh0c2ZsZXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTIwMDcsImV4cCI6MjA4ODk4ODAwN30.irCKDABvILPdlDbHYrQ06gtPWaa6-95q5lNx2GGKQec';
-    
     const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
-    async function fetchConsumi() {
-        const corpo = document.getElementById('tabella-corpo');
-        const loader = document.getElementById('loading-state');
-        corpo.innerHTML = '';
-        loader.classList.remove('hidden');
+    const urlParams = new URLSearchParams(window.location.search);
+    const recordId = urlParams.get('id');
 
-        try {
-            const { data, error } = await supabaseClient
-                .from('consumi')
-                .select('*')
-                .order('DataRifornimento', { ascending: false });
-
-            if (error) throw error;
-            renderTable(data);
-            renderStats(data);
-        } catch (err) {
-            console.error(err.message);
-        } finally {
-            loader.classList.add('hidden');
+    async function caricaDati() {
+        if (!recordId) {
+            window.location.href = 'Elenco_rifornimenti.html';
+            return;
         }
+
+        const { data, error } = await supabaseClient
+            .from('consumi')
+            .select('*')
+            .eq('id', recordId)
+            .single();
+
+        if (error) {
+            alert("Errore caricamento dati: " + error.message);
+            return;
+        }
+
+        // Popolamento campi (mappatura nomi colonne Supabase)
+        document.getElementById('DataRifornimento').value = data.DataRifornimento || '';
+        document.getElementById('kmattuali').value = data.kmattuali || '';
+        document.getElementById('totlitri').value = data.totlitri || '';
+        document.getElementById('importototale').value = data.importototale || '';
+        document.getElementById('costolitro').value = data.costolitro || '';
     }
 
-    function renderTable(lista) {
-        const corpo = document.getElementById('tabella-corpo');
-        let currentMonth = "";
-
-        const insertMonthlySummary = (label, dataArr) => {
-            if (dataArr.length === 0) return;
-            
-            const spesaMese = dataArr.reduce((a, b) => a + (b.importototale || 0), 0);
-            const litriMese = dataArr.reduce((a, b) => a + (b.totlitri || 0), 0);
-            const kms = dataArr.map(o => o.kmattuali || 0);
-            const kmMese = Math.max(...kms) - Math.min(...kms);
-            const mediaMese = (spesaMese / (litriMese || 1)).toFixed(3);
-
-            corpo.innerHTML += `
-                <tr class="month-summary-row">
-                    <td colspan="6" class="p-6">
-                        <div class="flex flex-wrap items-center justify-between gap-6">
-                            <span class="month-label">${label}</span>
-                            <div class="flex gap-8">
-                                <div><span class="month-stat-label">Spesa</span><span class="month-stat-val text-blue-600">€ ${spesaMese.toFixed(2)}</span></div>
-                                <div><span class="month-stat-label">Litri</span><span class="month-stat-val text-emerald-600">${litriMese.toFixed(1)} L</span></div>
-                                <div><span class="month-stat-label">Distanza</span><span class="month-stat-val text-amber-500">${kmMese} KM</span></div>
-                                <div><span class="month-stat-label">Media</span><span class="month-stat-val text-purple-600">€ ${mediaMese}</span></div>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            `;
+    document.getElementById('edit-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btn-salva');
+        btn.innerText = "Salvataggio...";
+        btn.disabled = true;
+        
+        // Costruzione oggetto con i nomi colonne ESATTI del DB
+        const updatedData = {
+            DataRifornimento: document.getElementById('DataRifornimento').value,
+            kmattuali: parseFloat(document.getElementById('kmattuali').value),
+            totlitri: parseFloat(document.getElementById('totlitri').value),
+            importototale: parseFloat(document.getElementById('importototale').value),
+            costolitro: parseFloat(document.getElementById('costolitro').value)
         };
 
-        lista.forEach((item) => {
-            const d = new Date(item.DataRifornimento);
-            const monthLabel = d.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
-            const dataF = d.toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', year:'2-digit'});
+        try {
+            const { error } = await supabaseClient
+                .from('consumi')
+                .update(updatedData)
+                .eq('id', recordId);
 
-            if (monthLabel !== currentMonth) {
-                currentMonth = monthLabel;
-                const recordsDelMese = lista.filter(x => 
-                    new Date(x.DataRifornimento).toLocaleString('it-IT', { month: 'long', year: 'numeric' }) === monthLabel
-                );
-                insertMonthlySummary(monthLabel, recordsDelMese);
-            }
-            
-            corpo.innerHTML += `
-                <tr class="hover:bg-white/40 transition-colors border-b border-white/20">
-                    <td class="p-6 text-sm font-bold text-[#243b53]">${dataF}</td>
-                    <td class="p-6 text-sm font-mono text-blue-600 font-bold">${item.kmattuali?.toLocaleString()} <span class="text-[9px] text-slate-400 font-normal ml-1 uppercase">KM</span></td>
-                    <td class="p-6 text-sm text-slate-600 font-semibold">${item.totlitri} <span class="text-[9px] text-slate-400 uppercase font-normal">L</span></td>
-                    <td class="p-6 text-sm font-black text-emerald-600">€ ${item.importototale?.toFixed(2)}</td>
-                    <td class="p-6 text-xs text-slate-400 font-medium italic">€ ${item.costolitro?.toFixed(3)}</td>
-                    <td class="p-6 text-right space-x-3">
-                        <button onclick="window.location.href='Modifica_rifornimento.html?id=${item.id}'" class="btn-mgmt btn-edit">
-                            <i class="fas fa-pencil-alt text-sm"></i>
-                        </button>
-                        <button onclick="elimina(${item.id})" class="btn-mgmt btn-delete">
-                            <i class="fas fa-trash-alt text-sm"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-    }
+            if (error) throw error;
 
-    async function elimina(id) {
-        if(confirm("Vuoi rimuovere questo rifornimento?")) {
-            const { error } = await supabaseClient.from('consumi').delete().eq('id', id);
-            if (!error) fetchConsumi();
+            // Se non c'è errore, torna all'elenco
+            window.location.href = 'Elenco_rifornimenti.html';
+
+        } catch (err) {
+            console.error("Errore completo:", err);
+            alert("Errore database: " + err.message + "\n\nVerifica che i nomi delle colonne nel DB siano corretti.");
+            btn.innerText = "Salva Modifiche";
+            btn.disabled = false;
         }
-    }
+    });
 
-    function renderStats(lista) {
-        const container = document.getElementById('stats-container');
-        if (!lista.length) return;
-
-        const spesa = lista.reduce((a, b) => a + (b.importototale || 0), 0);
-        const litri = lista.reduce((a, b) => a + (b.totlitri || 0), 0);
-        const kms = lista.map(o => o.kmattuali || 0);
-        const kmMax = Math.max(...kms);
-        const kmMin = Math.min(...kms);
-
-        const cards = [
-            { label: 'Spesa Totale', val: '€ ' + spesa.toLocaleString('it-IT', {minimumFractionDigits: 2}), color: '#3b82f6' },
-            { label: 'Litri Totali', val: litri.toFixed(1) + ' L', color: '#10b981' },
-            { label: 'Distanza', val: (kmMax - kmMin).toLocaleString() + ' KM', color: '#f59e0b' },
-            { label: 'Media/L', val: '€ ' + (spesa / (litri || 1)).toFixed(3), color: '#8b5cf6' }
-        ];
-
-        container.innerHTML = cards.map(c => `
-            <div class="stats-card p-7 rounded-[2rem]">
-                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">${c.label}</p>
-                <h2 class="text-2xl font-black" style="color: ${c.color}">${c.val}</h2>
-            </div>
-        `).join('');
-    }
-
-    window.onload = fetchConsumi;
+    window.onload = caricaDati;
 </script>
 
 </body>
