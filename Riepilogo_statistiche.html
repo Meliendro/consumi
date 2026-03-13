@@ -77,36 +77,31 @@
         const statsMensili = {};
         const statsAnnuali = {};
 
-        data.forEach((item, index) => {
+        data.forEach((item) => {
             const d = new Date(item.DataRifornimento);
-            const monthKey = d.getFullYear() + "-" + (d.getMonth() + 1).toString().padStart(2, '0'); // Per ordinamento corretto
+            const monthKey = d.getFullYear() + "-" + (d.getMonth() + 1).toString().padStart(2, '0');
             const meseAnno = d.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
             const anno = d.getFullYear();
+            const km = parseFloat(item.kmattuali) || 0;
 
-            // Calcolo KM percorsi nel periodo (Differenza tra questo record e il precedente assoluto)
-            let diffKM = 0;
-            if (index > 0) {
-                diffKM = item.kmattuali - data[index-1].kmattuali;
-            }
-
-            // Inizializzazione Mensile
+            // Logica Mensile
             if (!statsMensili[monthKey]) {
-                statsMensili[monthKey] = { label: meseAnno, spesa: 0, litri: 0, kmPercorsi: 0, kmOdo: 0, count: 0 };
+                statsMensili[monthKey] = { label: meseAnno, spesa: 0, litri: 0, kmMin: km, kmMax: km, count: 0 };
             }
-            statsMensili[monthKey].spesa += item.importototale || 0;
-            statsMensili[monthKey].litri += item.totlitri || 0;
-            statsMensili[monthKey].kmPercorsi += diffKM;
-            statsMensili[monthKey].kmOdo = item.kmattuali; // L'ultimo record del mese aggiorna l'odometro finale
+            statsMensili[monthKey].spesa += (parseFloat(item.importototale) || 0);
+            statsMensili[monthKey].litri += (parseFloat(item.totlitri) || 0);
+            statsMensili[monthKey].kmMin = Math.min(statsMensili[monthKey].kmMin, km);
+            statsMensili[monthKey].kmMax = Math.max(statsMensili[monthKey].kmMax, km);
             statsMensili[monthKey].count++;
 
-            // Inizializzazione Annuale
+            // Logica Annuale
             if (!statsAnnuali[anno]) {
-                statsAnnuali[anno] = { label: anno, spesa: 0, litri: 0, kmPercorsi: 0, kmOdo: 0, count: 0 };
+                statsAnnuali[anno] = { label: anno, spesa: 0, litri: 0, kmMin: km, kmMax: km, count: 0 };
             }
-            statsAnnuali[anno].spesa += item.importototale || 0;
-            statsAnnuali[anno].litri += item.totlitri || 0;
-            statsAnnuali[anno].kmPercorsi += diffKM;
-            statsAnnuali[anno].kmOdo = item.kmattuali;
+            statsAnnuali[anno].spesa += (parseFloat(item.importototale) || 0);
+            statsAnnuali[anno].litri += (parseFloat(item.totlitri) || 0);
+            statsAnnuali[anno].kmMin = Math.min(statsAnnuali[anno].kmMin, km);
+            statsAnnuali[anno].kmMax = Math.max(statsAnnuali[anno].kmMax, km);
             statsAnnuali[anno].count++;
         });
 
@@ -118,34 +113,34 @@
         const container = document.getElementById(containerId);
         container.innerHTML = '';
 
-        // Ordina le chiavi al contrario per vedere i dati più recenti in alto
         Object.keys(obj).sort().reverse().forEach(key => {
             const s = obj[key];
+            const kmPeriodo = s.kmMax - s.kmMin;
             const mediaPrezzo = (s.spesa / (s.litri || 1)).toFixed(3);
             
             container.innerHTML += `
                 <div class="apple-glass p-6 rounded-[2.5rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-                    <div class="min-w-[180px]">
+                    <div class="min-w-[160px]">
                         <h3 class="text-xl font-black text-white capitalize">${s.label}</h3>
-                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${s.count} Operazioni</p>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${s.count} Pieni</p>
                     </div>
                     
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-6 w-full">
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 w-full text-center md:text-left">
                         <div>
-                            <p class="text-[9px] font-black text-blue-500 uppercase tracking-tighter">Spesa Totale</p>
+                            <p class="text-[9px] font-black text-blue-500 uppercase tracking-tighter">Spesa</p>
                             <p class="text-lg font-black text-white">€ ${s.spesa.toFixed(2)}</p>
                         </div>
                         <div>
-                            <p class="text-[9px] font-black text-emerald-500 uppercase tracking-tighter">Litri Totali</p>
+                            <p class="text-[9px] font-black text-emerald-500 uppercase tracking-tighter">Litri</p>
                             <p class="text-lg font-bold text-slate-200">${s.litri.toFixed(1)} L</p>
                         </div>
                         <div>
-                            <p class="text-[9px] font-black text-amber-500 uppercase tracking-tighter">KM nel Periodo</p>
-                            <p class="text-lg font-bold text-slate-200">${s.kmPercorsi.toLocaleString()} KM</p>
+                            <p class="text-[9px] font-black text-amber-500 uppercase tracking-tighter">Percorsi</p>
+                            <p class="text-lg font-black text-amber-400">${kmPeriodo.toLocaleString()} KM</p>
                         </div>
                         <div>
-                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Odometro Finale</p>
-                            <p class="text-lg font-bold text-blue-400/80">${s.kmOdo.toLocaleString()} <span class="text-[10px]">KM</span></p>
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Odometro</p>
+                            <p class="text-sm font-bold text-slate-400">In: ${s.kmMin.toLocaleString()}<br>Fine: ${s.kmMax.toLocaleString()}</p>
                         </div>
                         <div>
                             <p class="text-[9px] font-black text-purple-500 uppercase tracking-tighter">Media €/L</p>
