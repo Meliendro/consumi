@@ -115,7 +115,7 @@
 
         Object.keys(obj).sort().reverse().forEach(key => {
             const s = obj[key];
-            const kmPeriodo = s.kmMax - s.kmMin;
+            const kmmese = s.kmMax - s.kmMin; // Calcolo dei km nel periodo
             const mediaPrezzo = (s.spesa / (s.litri || 1)).toFixed(3);
             
             container.innerHTML += `
@@ -135,12 +135,12 @@
                             <p class="text-lg font-bold text-slate-200">${s.litri.toFixed(1)} L</p>
                         </div>
                         <div>
-                            <p class="text-[9px] font-black text-amber-500 uppercase tracking-tighter">Percorsi</p>
-                            <p class="text-lg font-black text-amber-400">${kmPeriodo.toLocaleString()} KM</p>
+                            <p class="text-[9px] font-black text-amber-500 uppercase tracking-tighter">KM Mese</p>
+                            <p class="text-lg font-black text-amber-400">${kmmese.toLocaleString()} KM</p>
                         </div>
                         <div>
                             <p class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Odometro</p>
-                            <p class="text-sm font-bold text-slate-400">In: ${s.kmMin.toLocaleString()}<br>Fine: ${s.kmMax.toLocaleString()}</p>
+                            <p class="text-sm font-bold text-slate-400">Inizio: ${s.kmMin.toLocaleString()}<br>Fine: ${s.kmMax.toLocaleString()}</p>
                         </div>
                         <div>
                             <p class="text-[9px] font-black text-purple-500 uppercase tracking-tighter">Media €/L</p>
