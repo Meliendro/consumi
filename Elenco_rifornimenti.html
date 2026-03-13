@@ -23,7 +23,6 @@
             min-height: 100vh;
         }
 
-        /* Effetto Apple Glass Chiaro */
         .apple-glass {
             background: var(--glass);
             backdrop-filter: blur(15px);
@@ -49,16 +48,11 @@
             border: 1px solid var(--glass-border);
         }
 
-        /* Badge per il raggruppamento mese */
         .month-divider {
-            background: rgba(59, 130, 246, 0.1);
-            color: #2563eb;
-            font-weight: 800;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            padding: 12px 24px;
-            border-left: 4px solid #3b82f6;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.8);
         }
     </style>
 </head>
@@ -103,8 +97,7 @@
                         <th class="p-6 text-right text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Gestione</th>
                     </tr>
                 </thead>
-                <tbody id="tabella-corpo">
-                    </tbody>
+                <tbody id="tabella-corpo"></tbody>
             </table>
         </div>
     </div>
@@ -145,19 +138,51 @@
     function renderTable(lista) {
         const corpo = document.getElementById('tabella-corpo');
         let currentMonth = "";
+        let monthlyData = [];
 
-        lista.forEach(item => {
+        // Funzione per inserire la riga dei totali mensili
+        const insertMonthlySummary = (label, dataArr) => {
+            if (dataArr.length === 0) return;
+            
+            const spesaMese = dataArr.reduce((a, b) => a + (b.importototale || 0), 0);
+            const litriMese = dataArr.reduce((a, b) => a + (b.totlitri || 0), 0);
+            const kmMese = Math.max(...dataArr.map(o => o.kmattuali || 0)) - Math.min(...dataArr.map(o => o.kmattuali || 0));
+            const mediaMese = (spesaMese / litriMese).toFixed(3);
+
+            corpo.innerHTML += `
+                <tr class="month-divider">
+                    <td colspan="6" class="p-4 px-6">
+                        <div class="flex flex-wrap items-center justify-between gap-4">
+                            <span class="text-blue-600 font-extrabold uppercase tracking-widest text-xs">${label}</span>
+                            <div class="flex gap-6 text-[10px] font-bold uppercase tracking-tighter">
+                                <span>Spesa: <span class="text-slate-800">€${spesaMese.toFixed(2)}</span></span>
+                                <span>Litri: <span class="text-slate-800">${litriMese.toFixed(1)}L</span></span>
+                                <span>Dist: <span class="text-slate-800">${kmMese}km</span></span>
+                                <span>Media: <span class="text-slate-800">€${mediaMese}/L</span></span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        };
+
+        lista.forEach((item, index) => {
             const d = new Date(item.DataRifornimento);
             const monthLabel = d.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
             const dataF = d.toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', year:'2-digit'});
 
             if (monthLabel !== currentMonth) {
+                if (currentMonth !== "") {
+                    // Non inseriamo qui perché la lista è invertita (descendente)
+                    // La logica di raggruppamento in ordine decrescente richiede di visualizzare il titolo prima dei dati
+                }
                 currentMonth = monthLabel;
-                corpo.innerHTML += `
-                    <tr>
-                        <td colspan="6" class="month-divider">${currentMonth}</td>
-                    </tr>
-                `;
+                
+                // Filtriamo tutti i record di questo mese per calcolare i totali subito
+                const recordsDelMese = lista.filter(x => 
+                    new Date(x.DataRifornimento).toLocaleString('it-IT', { month: 'long', year: 'numeric' }) === monthLabel
+                );
+                insertMonthlySummary(monthLabel, recordsDelMese);
             }
             
             corpo.innerHTML += `
