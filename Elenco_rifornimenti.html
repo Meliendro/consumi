@@ -173,11 +173,10 @@
             const { data, error } = await supabaseClient
                 .from('consumi')
                 .select('*')
-                .order('DataRifornimento', { ascending: true }); // Carico in ordine ASC per calcolare bene i KM
+                .order('DataRifornimento', { ascending: true });
 
             if (error) throw error;
             
-            // Invertiamo l'ordine per la visualizzazione (più recenti sopra) ma teniamo l'originale per i calcoli
             const dataVisualizzazione = [...data].reverse();
             renderTable(dataVisualizzazione, data);
             renderStats(data);
@@ -201,18 +200,6 @@
         const insertMonthlySummary = (label, recordsMese, monthId) => {
             const spesaMese = recordsMese.reduce((a, b) => a + (b.importototale || 0), 0);
             const litriMese = recordsMese.reduce((a, b) => a + (b.totlitri || 0), 0);
-            
-            // TROVA IL KM INIZIALE (ultimo km del mese precedente o il primo km assoluto)
-            const primoDelMese = recordsMese[0]; // recordsMese è ordinato ASC
-            const indexInOriginale = listaOriginale.findIndex(x => x.id === primoDelMese.id);
-            
-            const kmPartenza = indexInOriginale > 0 
-                ? listaOriginale[indexInOriginale - 1].kmattuali 
-                : primoDelMese.kmattuali;
-
-            const kmArrivo = recordsMese[recordsMese.length - 1].kmattuali;
-            const kmmese = kmArrivo - kmPartenza;
-            
             const mediaMese = (spesaMese / (litriMese || 1)).toFixed(3);
 
             corpo.innerHTML += `
@@ -226,8 +213,7 @@
                             <div class="flex flex-wrap gap-4">
                                 <div class="month-pill"><span class="month-stat-label">Spesa</span><span class="month-stat-val text-blue-600">€ ${spesaMese.toFixed(2)}</span></div>
                                 <div class="month-pill"><span class="month-stat-label">Litri</span><span class="month-stat-val text-emerald-600">${litriMese.toFixed(1)} L</span></div>
-                                <div class="month-pill"><span class="month-stat-label">KM Mese</span><span class="month-stat-val text-amber-500">${kmmese.toLocaleString()} KM</span></div>
-                                <div class="month-pill"><span class="month-stat-label">Media</span><span class="month-stat-val text-purple-600">€ ${mediaMese}</span></div>
+                                <div class="month-pill"><span class="month-stat-label">Media Periodo</span><span class="month-stat-val text-purple-600">€ ${mediaMese}</span></div>
                             </div>
                         </div>
                     </td>
@@ -255,7 +241,7 @@
                     <td class="p-6 text-sm font-mono text-blue-600 font-bold">${item.kmattuali?.toLocaleString()} <span class="text-[9px] text-slate-400 font-normal ml-1 uppercase">KM</span></td>
                     <td class="p-6 text-sm text-slate-600 font-semibold">${item.totlitri} <span class="text-[9px] text-slate-400 uppercase font-normal">L</span></td>
                     <td class="p-6 text-sm font-black text-emerald-600">€ ${item.importototale?.toFixed(2)}</td>
-                    <td class="p-6 text-xs text-slate-400 font-medium italic">€ ${item.costolitro?.toFixed(3)}</td>
+                    <td class="p-6 text-sm font-bold text-purple-600">€ ${item.costolitro?.toFixed(3)}</td>
                     <td class="p-6 text-right">
                         <div class="flex justify-end gap-2">
                             <button onclick="window.location.href='Modifica_rifornimento.html?id=${item.id}'" class="btn-mgmt btn-edit"><i class="fas fa-pencil-alt text-xs"></i></button>
@@ -286,8 +272,8 @@
         const cards = [
             { label: 'Spesa Totale', val: '€ ' + spesa.toLocaleString('it-IT', {minimumFractionDigits: 2}), color: '#3b82f6' },
             { label: 'Litri Totali', val: litri.toFixed(1) + ' L', color: '#10b981' },
-            { label: 'KM Totali', val: (kmMax - kmMin).toLocaleString() + ' KM', color: '#f59e0b' },
-            { label: 'Media/L', val: '€ ' + (spesa / (litri || 1)).toFixed(3), color: '#8b5cf6' }
+            { label: 'Percorso Totale', val: (kmMax - kmMin).toLocaleString() + ' KM', color: '#f59e0b' },
+            { label: 'Media Storica', val: '€ ' + (spesa / (litri || 1)).toFixed(3), color: '#8b5cf6' }
         ];
 
         container.innerHTML = cards.map(c => `
