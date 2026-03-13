@@ -36,8 +36,8 @@
             width: 38px;
             height: 38px;
             display: inline-flex;
-            items-center;
-            justify-center;
+            align-items: center;
+            justify-content: center;
             border-radius: 50%;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             background: rgba(255, 255, 255, 0.5);
@@ -60,9 +60,15 @@
             box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
         }
 
-        /* Riepilogo Mese Potenziato */
+        /* Riepilogo Mese Potenziato e Collassabile */
         .month-summary-row {
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .month-summary-row:hover {
+            background: rgba(255, 255, 255, 0.6);
         }
 
         .month-pill {
@@ -95,6 +101,19 @@
             color: #94a3b8;
             margin-bottom: 2px;
             display: block;
+        }
+
+        /* Utility per il collasso */
+        .row-hidden {
+            display: none;
+        }
+        
+        .chevron-rotate {
+            transition: transform 0.3s;
+        }
+        
+        .collapsed .chevron-rotate {
+            transform: rotate(-90deg);
         }
     </style>
 </head>
@@ -177,11 +196,20 @@
         }
     }
 
+    // Funzione per mostrare/nascondere le righe
+    function toggleMonth(monthId, headerElement) {
+        const rows = document.querySelectorAll(`.row-month-${monthId}`);
+        headerElement.classList.toggle('collapsed');
+        rows.forEach(row => {
+            row.classList.toggle('row-hidden');
+        });
+    }
+
     function renderTable(lista) {
         const corpo = document.getElementById('tabella-corpo');
         let currentMonth = "";
 
-        const insertMonthlySummary = (label, dataArr) => {
+        const insertMonthlySummary = (label, dataArr, monthId) => {
             if (dataArr.length === 0) return;
             
             const spesaMese = dataArr.reduce((a, b) => a + (b.importototale || 0), 0);
@@ -191,10 +219,13 @@
             const mediaMese = (spesaMese / (litriMese || 1)).toFixed(3);
 
             corpo.innerHTML += `
-                <tr class="month-summary-row border-t border-white/40">
+                <tr class="month-summary-row border-t border-white/40" onclick="toggleMonth('${monthId}', this)">
                     <td colspan="6" class="p-6">
                         <div class="flex flex-wrap items-center justify-between gap-6">
-                            <span class="month-label">${label}</span>
+                            <div class="flex items-center gap-4">
+                                <i class="fas fa-chevron-down text-slate-400 chevron-rotate"></i>
+                                <span class="month-label">${label}</span>
+                            </div>
                             <div class="flex flex-wrap gap-4">
                                 <div class="month-pill">
                                     <span class="month-stat-label">Spesa</span>
@@ -222,6 +253,7 @@
         lista.forEach((item) => {
             const d = new Date(item.DataRifornimento);
             const monthLabel = d.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
+            const monthId = d.getMonth() + "-" + d.getFullYear(); // ID unico per il gruppo mese
             const dataF = d.toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', year:'2-digit'});
 
             if (monthLabel !== currentMonth) {
@@ -229,11 +261,11 @@
                 const recordsDelMese = lista.filter(x => 
                     new Date(x.DataRifornimento).toLocaleString('it-IT', { month: 'long', year: 'numeric' }) === monthLabel
                 );
-                insertMonthlySummary(monthLabel, recordsDelMese);
+                insertMonthlySummary(monthLabel, recordsDelMese, monthId);
             }
             
             corpo.innerHTML += `
-                <tr class="hover:bg-white/40 transition-colors border-b border-white/10">
+                <tr class="hover:bg-white/40 transition-colors border-b border-white/10 row-month-${monthId}">
                     <td class="p-6 text-sm font-bold text-[#243b53]">${dataF}</td>
                     <td class="p-6 text-sm font-mono text-blue-600 font-bold">${item.kmattuali?.toLocaleString()} <span class="text-[9px] text-slate-400 font-normal ml-1 uppercase">KM</span></td>
                     <td class="p-6 text-sm text-slate-600 font-semibold">${item.totlitri} <span class="text-[9px] text-slate-400 uppercase font-normal">L</span></td>
