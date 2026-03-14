@@ -18,8 +18,8 @@
             <h1 class="text-2xl font-black uppercase tracking-tighter text-purple-500">Storico Medie Mensili</h1>
             <p class="text-slate-500 text-xs">Confronto dei costi medi per ogni mese</p>
         </div>
-        <a href="Analytics_Avanzate.html" class="bg-slate-800 px-6 py-2 rounded-xl text-xs font-bold uppercase hover:bg-slate-700 transition-all">
-            <i class="fas fa-chart-pie mr-2"></i> Riepilogo
+        <a href="Riepilogo_statistiche.html" class="bg-slate-800 px-6 py-2 rounded-xl text-xs font-bold uppercase hover:bg-slate-700 transition-all">
+            <i class="fas fa-chevron-left mr-2"></i> Indietro
         </a>
     </div>
 
@@ -34,7 +34,6 @@
 
         async function init() {
             try {
-                // Fetch rapido selezionando solo le colonne necessarie
                 const { data, error } = await supabaseClient
                     .from('consumi')
                     .select('DataRifornimento, costolitro')
@@ -44,14 +43,14 @@
 
                 const mensili = {};
                 
-                // Ottimizzazione ciclo: usiamo un ciclo for classico o for-of per performance migliori su grandi dataset
                 for (const row of data) {
-                    // Cache della data per evitare calcoli multipli
                     const dateObj = new Date(row.DataRifornimento);
+                    // Usiamo una chiave che contenga l'anno per il raggruppamento e il colore
                     const label = dateObj.toLocaleString('it-IT', { month: 'short', year: '2-digit' });
+                    const anno = dateObj.getFullYear();
                     
                     if (!mensili[label]) {
-                        mensili[label] = { somma: 0, count: 0 };
+                        mensili[label] = { somma: 0, count: 0, anno: anno };
                     }
                     
                     const costo = parseFloat(row.costolitro);
@@ -63,17 +62,25 @@
 
                 const labels = Object.keys(mensili);
                 const values = labels.map(l => (mensili[l].somma / mensili[l].count).toFixed(3));
+                
+                // Genera colori diversi in base all'anno
+                const backgroundColors = labels.map(l => {
+                    const anno = mensili[l].anno;
+                    // Alterna colori tra anni (es: 2024 viola, 2025 blu, 2026 smeraldo)
+                    if (anno % 3 === 0) return '#8b5cf6'; // Viola
+                    if (anno % 3 === 1) return '#3b82f6'; // Blu
+                    return '#10b981'; // Smeraldo
+                });
 
-                renderChart(labels, values);
+                renderChart(labels, values, backgroundColors);
             } catch (err) {
                 console.error("Errore caricamento dati:", err);
             }
         }
 
-        function renderChart(labels, values) {
+        function renderChart(labels, values, colors) {
             const ctx = document.getElementById('mainChart').getContext('2d');
             
-            // Distruggiamo eventuali istanze precedenti se necessario (buona pratica)
             if (window.myChart) window.myChart.destroy();
 
             window.myChart = new Chart(ctx, {
@@ -83,41 +90,34 @@
                     datasets: [{
                         label: 'Media €/L',
                         data: values,
-                        backgroundColor: '#8b5cf6',
-                        borderRadius: 10,
-                        borderSkipped: false,
-                        hoverBackgroundColor: '#a78bfa'
+                        backgroundColor: colors,
+                        borderRadius: 8,
+                        borderSkipped: false
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeOutQuart'
-                    },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
                             backgroundColor: '#1e293b',
-                            titleFont: { size: 14, weight: 'bold' },
-                            bodyFont: { size: 13 },
                             padding: 12,
-                            displayColors: false,
+                            displayColors: true,
                             callbacks: {
-                                label: (context) => `Media: € ${context.raw}`
+                                label: (context) => ` Media: € ${context.raw}`
                             }
                         }
                     },
                     scales: {
                         y: { 
                             beginAtZero: false,
-                            grid: { color: 'rgba(30, 41, 59, 0.5)', drawBorder: false },
-                            ticks: { color: '#64748b', font: { size: 11 } }
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94a3b8' }
                         },
                         x: {
                             grid: { display: false },
-                            ticks: { color: '#64748b', font: { size: 11 } }
+                            ticks: { color: '#94a3b8' }
                         }
                     }
                 }
