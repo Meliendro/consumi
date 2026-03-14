@@ -24,7 +24,7 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
         .section-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.2em; }
-        .chart-container { position: relative; height: 260px; width: 100%; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
         
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
@@ -47,20 +47,22 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-16">
         <div class="apple-glass p-6 rounded-[2.5rem]">
             <h2 class="section-title mb-4 flex items-center text-[10px]">
-                <i class="fas fa-gas-pump mr-2 text-blue-500"></i> Costo €/L (Separatore Mese)
+                <i class="fas fa-gas-pump mr-2 text-blue-500"></i> Costo €/L (Trend)
             </h2>
             <div class="chart-container">
                 <canvas id="chartPuntuale"></canvas>
             </div>
         </div>
-        <div class="apple-glass p-6 rounded-[2.5rem]">
+
+        <div class="apple-glass p-6 rounded-[2.5rem] lg:col-span-1">
             <h2 class="section-title mb-4 flex items-center text-[10px]">
-                <i class="fas fa-road mr-2 text-emerald-500"></i> KM tra Rifornimenti
+                <i class="fas fa-road mr-2 text-emerald-500"></i> Progressione & Parziali KM
             </h2>
             <div class="chart-container">
                 <canvas id="chartKm"></canvas>
             </div>
         </div>
+
         <div class="apple-glass p-6 rounded-[2.5rem]">
             <h2 class="section-title mb-4 flex items-center text-[10px]">
                 <i class="fas fa-chart-bar mr-2 text-purple-500"></i> Media Mensile €/L
@@ -84,7 +86,7 @@
 
     <div id="loader" class="fixed inset-0 bg-[#0f172a] flex flex-col items-center justify-center z-50">
         <div class="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Sincronizzazione Dati...</p>
+        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Analisi chilometrica in corso...</p>
     </div>
 </div>
 
@@ -137,90 +139,89 @@
     }
 
     function initCharts(data) {
-        const commonOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 } } },
-                x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } }
-            }
-        };
-
-        // 1. Grafico Puntuale con linee cambio mese
         const labelsP = data.map(i => new Date(i.DataRifornimento).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit'}));
-        const valuesP = data.map(i => i.costolitro);
-        
-        const monthLineIndices = [];
-        data.forEach((item, index) => {
-            if (index > 0) {
-                const curM = new Date(item.DataRifornimento).getMonth();
-                const prevM = new Date(data[index-1].DataRifornimento).getMonth();
-                if (curM !== prevM) monthLineIndices.push(index);
-            }
-        });
 
+        // --- 1. GRAFICO PREZZO PUNTUALE ---
         new Chart(document.getElementById('chartPuntuale'), {
             type: 'line',
             data: {
                 labels: labelsP,
                 datasets: [{
-                    data: valuesP,
+                    data: data.map(i => i.costolitro),
                     borderColor: '#3b82f6',
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#3b82f6'
+                    fill: true, tension: 0.3, pointRadius: 3
                 }]
             },
-            plugins: [{
-                id: 'monthSeparator',
-                afterDatasetsDraw(chart) {
-                    const {ctx, chartArea: {top, bottom}, scales: {x}} = chart;
-                    ctx.save();
-                    monthLineIndices.forEach(idx => {
-                        const xPos = x.getPixelForValue(idx) - (x.getPixelForValue(idx) - x.getPixelForValue(idx-1))/2;
-                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-                        ctx.setLineDash([5, 5]);
-                        ctx.lineWidth = 1;
-                        ctx.beginPath();
-                        ctx.moveTo(xPos, top);
-                        ctx.lineTo(xPos, bottom);
-                        ctx.stroke();
-                    });
-                    ctx.restore();
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                    x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } }
                 }
-            }],
-            options: commonOptions
+            }
         });
 
-        // 2. Grafico KM (Logica corretta: KM attuali - KM record precedente)
-        const valuesKm = data.map((item, index) => {
+        // --- 2. GRAFICO PROGRESSIONE KM (DOPPIA LINEA) ---
+        const valuesKmParziali = data.map((item, index) => {
             if (index === 0) return 0;
             const diff = (parseInt(item.kmattuali) || 0) - (parseInt(data[index-1].kmattuali) || 0);
             return diff > 0 ? diff : 0;
         });
 
+        const valuesKmTotali = data.map(i => parseInt(i.kmattuali) || 0);
+
         new Chart(document.getElementById('chartKm'), {
             type: 'line',
             data: {
                 labels: labelsP,
-                datasets: [{
-                    label: 'KM Percorsi',
-                    data: valuesKm,
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#10b981'
-                }]
+                datasets: [
+                    {
+                        label: 'KM Parziali',
+                        data: valuesKmParziali,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'KM Totali Prog.',
+                        data: valuesKmTotali,
+                        borderColor: '#f59e0b',
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.2,
+                        pointRadius: 0,
+                        yAxisID: 'y1'
+                    }
+                ]
             },
-            options: commonOptions
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: true, labels: { color: '#64748b', size: 10, boxWidth: 10 } } 
+                },
+                scales: {
+                    y: {
+                        position: 'left',
+                        title: { display: true, text: 'Parziali', color: '#10b981', font: { size: 10 } },
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#10b981' }
+                    },
+                    y1: {
+                        position: 'right',
+                        title: { display: true, text: 'Totali', color: '#f59e0b', font: { size: 10 } },
+                        grid: { display: false },
+                        ticks: { color: '#f59e0b' }
+                    },
+                    x: { ticks: { color: '#64748b', font: { size: 9 } } }
+                }
+            }
         });
 
-        // 3. Media Mensile
+        // --- 3. GRAFICO MEDIA MENSILE ---
         const mensili = {};
         data.forEach(i => {
             const m = new Date(i.DataRifornimento).toLocaleString('it-IT', {month:'short', year:'2-digit'});
@@ -229,19 +230,24 @@
             mensili[m].count++;
         });
         const labelsM = Object.keys(mensili);
-        const valuesM = labelsM.map(l => (mensili[l].somma / mensili[l].count).toFixed(3));
-
+        
         new Chart(document.getElementById('chartMensile'), {
             type: 'bar',
             data: {
                 labels: labelsM,
                 datasets: [{
-                    data: valuesM,
-                    backgroundColor: '#8b5cf6',
-                    borderRadius: 8
+                    data: labelsM.map(l => (mensili[l].somma / mensili[l].count).toFixed(3)),
+                    backgroundColor: '#8b5cf6', borderRadius: 6
                 }]
             },
-            options: commonOptions
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                    x: { ticks: { color: '#64748b' } }
+                }
+            }
         });
     }
 
