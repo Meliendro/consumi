@@ -170,7 +170,6 @@
 
     let lastFetchedData = [];
 
-    // Helper per formattare i KM (senza decimali, punto come separatore migliaia)
     function formatKM(val) {
         if (!val && val !== 0) return "-";
         return Math.round(val).toLocaleString('it-IT', { maximumFractionDigits: 0 });
@@ -191,8 +190,7 @@
             if (error) throw error;
             
             lastFetchedData = data;
-            const dataVisualizzazione = [...data].reverse();
-            renderTable(dataVisualizzazione, data);
+            renderTable(data);
             renderStats(data);
         } catch (err) {
             console.error(err.message);
@@ -207,64 +205,70 @@
         rows.forEach(row => row.classList.toggle('row-hidden'));
     }
 
-    function renderTable(listaVisualizzata, listaOriginale) {
+    function renderTable(data) {
         const corpo = document.getElementById('tabella-corpo');
-        let currentMonth = "";
+        let htmlBuffer = "";
+        
+        // Calcoliamo i totali mensili in anticipo per efficienza
+        const mensili = {};
+        data.forEach(item => {
+            const d = new Date(item.DataRifornimento);
+            const monthLabel = d.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
+            if (!mensili[monthLabel]) mensili[monthLabel] = { spesa: 0, litri: 0, records: [] };
+            mensili[monthLabel].spesa += (item.importototale || 0);
+            mensili[monthLabel].litri += (item.totlitri || 0);
+            mensili[monthLabel].records.push(item);
+        });
 
-        const insertMonthlySummary = (label, recordsMese, monthId) => {
-            const spesaMese = recordsMese.reduce((a, b) => a + (b.importototale || 0), 0);
-            const litriMese = recordsMese.reduce((a, b) => a + (b.totlitri || 0), 0);
-            const mediaMese = (spesaMese / (litriMese || 1)).toFixed(3);
+        // Ordiniamo i mesi dal più recente al più vecchio
+        const mesiOrdinati = Object.keys(mensili).reverse();
 
-            corpo.innerHTML += `
+        mesiOrdinati.forEach(monthLabel => {
+            const mData = mensili[monthLabel];
+            const monthId = monthLabel.replace(/\s+/g, '-');
+            const mediaMese = (mData.spesa / (mData.litri || 1)).toFixed(3);
+
+            // Aggiungi Header Mese
+            htmlBuffer += `
                 <tr class="month-summary-row border-t border-white/40" onclick="toggleMonth('${monthId}', this)">
                     <td colspan="6" class="p-6">
                         <div class="flex flex-wrap items-center justify-between gap-6">
                             <div class="flex items-center gap-4">
                                 <i class="fas fa-chevron-down text-slate-400 chevron-rotate"></i>
-                                <span class="month-label">${label}</span>
+                                <span class="month-label">${monthLabel}</span>
                             </div>
                             <div class="flex flex-wrap gap-4">
-                                <div class="month-pill"><span class="month-stat-label">Spesa</span><span class="month-stat-val text-blue-600">€ ${spesaMese.toFixed(2)}</span></div>
-                                <div class="month-pill"><span class="month-stat-label">Litri</span><span class="month-stat-val text-emerald-600">${litriMese.toFixed(1)} L</span></div>
-                                <div class="month-pill"><span class="month-stat-label">Media Periodo</span><span class="month-stat-val text-purple-600">€ ${mediaMese}</span></div>
+                                <div class="month-pill"><span class="month-stat-label">Spesa</span><span class="month-stat-val text-blue-600">€ ${mData.spesa.toFixed(2)}</span></div>
+                                <div class="month-pill"><span class="month-stat-label">Litri</span><span class="month-stat-val text-emerald-600">${mData.litri.toFixed(1)} L</span></div>
+                                <div class="month-pill"><span class="month-stat-label">Media</span><span class="month-stat-val text-purple-600">€ ${mediaMese}</span></div>
                             </div>
                         </div>
                     </td>
                 </tr>
             `;
-        };
 
-        listaVisualizzata.forEach((item) => {
-            const d = new Date(item.DataRifornimento);
-            const monthLabel = d.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
-            const monthId = d.getMonth() + "-" + d.getFullYear();
-            const dataF = d.toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', year:'2-digit'});
-
-            if (monthLabel !== currentMonth) {
-                currentMonth = monthLabel;
-                const recordsDelMese = listaOriginale.filter(x => 
-                    new Date(x.DataRifornimento).toLocaleString('it-IT', { month: 'long', year: 'numeric' }) === monthLabel
-                );
-                insertMonthlySummary(monthLabel, recordsDelMese, monthId);
-            }
-            
-            corpo.innerHTML += `
-                <tr class="hover:bg-white/40 transition-colors border-b border-white/10 row-month-${monthId}">
-                    <td class="p-6 text-sm font-bold text-[#243b53]">${dataF}</td>
-                    <td class="p-6 text-sm font-mono text-blue-600 font-bold">${formatKM(item.kmattuali)} <span class="text-[9px] text-slate-400 font-normal ml-1 uppercase">KM</span></td>
-                    <td class="p-6 text-sm text-slate-600 font-semibold">${item.totlitri} <span class="text-[9px] text-slate-400 uppercase font-normal">L</span></td>
-                    <td class="p-6 text-sm font-black text-emerald-600">€ ${item.importototale?.toFixed(2)}</td>
-                    <td class="p-6 text-sm font-bold text-purple-600">€ ${item.costolitro?.toFixed(3)}</td>
-                    <td class="p-6 text-right">
-                        <div class="flex justify-end gap-2">
-                            <button onclick="window.location.href='Modifica_rifornimento.html?id=${item.id}'" class="btn-mgmt btn-edit"><i class="fas fa-pencil-alt text-xs"></i></button>
-                            <button onclick="elimina(${item.id})" class="btn-mgmt btn-delete"><i class="fas fa-trash-alt text-xs"></i></button>
-                        </div>
-                    </td>
-                </tr>
-            `;
+            // Aggiungi Righe (mostrate in ordine decrescente di data nel mese)
+            mData.records.reverse().forEach(item => {
+                const dateF = new Date(item.DataRifornimento).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', year:'2-digit'});
+                htmlBuffer += `
+                    <tr class="hover:bg-white/40 transition-colors border-b border-white/10 row-month-${monthId}">
+                        <td class="p-6 text-sm font-bold text-[#243b53]">${dateF}</td>
+                        <td class="p-6 text-sm font-mono text-blue-600 font-bold">${formatKM(item.kmattuali)} <span class="text-[9px] text-slate-400 font-normal ml-1 uppercase">KM</span></td>
+                        <td class="p-6 text-sm text-slate-600 font-semibold">${item.totlitri} <span class="text-[9px] text-slate-400 uppercase font-normal">L</span></td>
+                        <td class="p-6 text-sm font-black text-emerald-600">€ ${item.importototale?.toFixed(2)}</td>
+                        <td class="p-6 text-sm font-bold text-purple-600">€ ${item.costolitro?.toFixed(3)}</td>
+                        <td class="p-6 text-right">
+                            <div class="flex justify-end gap-2">
+                                <button onclick="window.location.href='Modifica_rifornimento.html?id=${item.id}'" class="btn-mgmt btn-edit"><i class="fas fa-pencil-alt text-xs"></i></button>
+                                <button onclick="elimina(${item.id})" class="btn-mgmt btn-delete"><i class="fas fa-trash-alt text-xs"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
         });
+
+        corpo.innerHTML = htmlBuffer;
     }
 
     async function elimina(id) {
@@ -303,7 +307,6 @@
             alert("Nessun dato da esportare");
             return;
         }
-
         const dataToExport = lastFetchedData.map(item => ({
             'Data': new Date(item.DataRifornimento).toLocaleDateString('it-IT'),
             'Chilometri Totali': Math.round(item.kmattuali),
@@ -312,13 +315,10 @@
             'Prezzo/Litro (€)': item.costolitro,
             'Note': item.note || ''
         }));
-
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Rifornimenti");
-
-        const dateStr = new Date().toISOString().slice(0, 10);
-        XLSX.writeFile(workbook, `Meliendro_Consumi_${dateStr}.xlsx`);
+        XLSX.writeFile(workbook, `Meliendro_Consumi_${new Date().toISOString().slice(0, 10)}.xlsx`);
     }
 
     window.onload = fetchConsumi;
