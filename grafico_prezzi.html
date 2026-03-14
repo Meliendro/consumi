@@ -18,7 +18,7 @@
     <div class="flex justify-between items-center mb-8">
         <div>
             <h1 class="text-2xl font-black uppercase tracking-tighter text-blue-500">Trend Costo Carburante</h1>
-            <p class="text-slate-500 text-xs">Trascina il grafico per scorrere nel tempo</p>
+            <p class="text-slate-500 text-xs">Usa mouse o touch per zoomare e scorrere</p>
         </div>
         <a href="Analytics_Avanzate.html" class="bg-slate-800 px-6 py-2 rounded-xl text-xs font-bold uppercase hover:bg-slate-700 transition-all">
             <i class="fas fa-chart-pie mr-2"></i> Riepilogo
@@ -34,30 +34,99 @@
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZHRxa3ZibXFwbnh0c2ZsZXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTIwMDcsImV4cCI6MjA4ODk4ODAwN30.irCKDABvILPdlDbHYrQ06gtPWaa6-95q5lNx2GGKQec';
         const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
+        // PLUGIN 1: Linee verticali cambio mese
+        const monthSeparatorPlugin = {
+            id: 'monthSeparator',
+            afterDatasetsDraw(chart) {
+                const {ctx, chartArea: {top, bottom}, scales: {x}, data} = chart;
+                if (!data.monthIndices) return;
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 1;
+                data.monthIndices.forEach(idx => {
+                    const xPos = x.getPixelForValue(idx) - (x.getPixelForValue(idx) - x.getPixelForValue(idx-1))/2;
+                    ctx.beginPath();
+                    ctx.moveTo(xPos, top);
+                    ctx.lineTo(xPos, bottom);
+                    ctx.stroke();
+                });
+                ctx.restore();
+            }
+        };
+
+        // PLUGIN 2: Sfondo colorato per cambio anno
+        const yearBackgroundPlugin = {
+            id: 'yearBackground',
+            beforeDatasetsDraw(chart) {
+                const {ctx, chartArea: {top, bottom, left, right}, scales: {x}, data} = chart;
+                if (!data.yearRanges) return;
+                ctx.save();
+                data.yearRanges.forEach((range, index) => {
+                    const start = range.start === 0 ? left : x.getPixelForValue(range.start);
+                    const end = range.end === data.labels.length - 1 ? right : x.getPixelForValue(range.end);
+                    // Colore alternato: uno trasparente, uno leggermente blu/grigio
+                    ctx.fillStyle = index % 2 === 0 ? 'rgba(255, 255, 255, 0.03)' : 'rgba(59, 130, 246, 0.05)';
+                    ctx.fillRect(start, top, end - start, bottom - top);
+                });
+                ctx.restore();
+            }
+        };
+
         async function init() {
             const { data } = await supabaseClient.from('consumi').select('*').order('DataRifornimento', { ascending: true });
-            const ctx = document.getElementById('mainChart').getContext('2d');
             
+            // Logica per identificare cambi mese e anni
+            const monthIndices = [];
+            const yearRanges = [];
+            let currentYearStart = 0;
+
+            data.forEach((item, index) => {
+                if (index > 0) {
+                    const curDate = new Date(item.DataRifornimento);
+                    const prevDate = new Date(data[index-1].DataRifornimento);
+                    
+                    // Cambio Mese
+                    if (curDate.getMonth() !== prevDate.getMonth()) {
+                        monthIndices.push(index);
+                    }
+                    // Cambio Anno
+                    if (curDate.getFullYear() !== prevDate.getFullYear()) {
+                        yearRanges.push({ start: currentYearStart, end: index - 1 });
+                        currentYearStart = index;
+                    }
+                }
+            });
+            yearRanges.push({ start: currentYearStart, end: data.length - 1 });
+
+            const ctx = document.getElementById('mainChart').getContext('2d');
             new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: data.map(i => new Date(i.DataRifornimento).toLocaleDateString('it-IT')),
+                    monthIndices: monthIndices,
+                    yearRanges: yearRanges,
                     datasets: [{
-                        label: 'Prezzo al Litro',
+                        label: 'Prezzo €/L',
                         data: data.map(i => i.costolitro),
                         borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        fill: true, tension: 0.3
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        fill: true, tension: 0.3, pointRadius: 4, pointHoverRadius: 8
                     }]
                 },
+                plugins: [monthSeparatorPlugin, yearBackgroundPlugin],
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
-                        zoom: { pan: { enabled: true, mode: 'x' }, zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' } }
+                        zoom: { 
+                            pan: { enabled: true, mode: 'x' }, 
+                            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' } 
+                        },
+                        legend: { display: false }
                     },
                     scales: {
-                        y: { grid: { color: '#1e293b' } },
-                        x: { grid: { display: false } }
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                        x: { grid: { display: false }, ticks: { color: '#64748b' } }
                     }
                 }
             });
