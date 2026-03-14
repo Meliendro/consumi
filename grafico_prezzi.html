@@ -20,7 +20,7 @@
             <h1 class="text-2xl font-black uppercase tracking-tighter text-blue-500">Trend Costo Carburante</h1>
             <p class="text-slate-500 text-xs">Usa mouse o touch per zoomare e scorrere</p>
         </div>
-        <a href="Analytics_Avanzate.html" class="bg-slate-800 px-6 py-2 rounded-xl text-xs font-bold uppercase hover:bg-slate-700 transition-all">
+        <a href="Riepilogo_statistiche.html" class="bg-slate-800 px-6 py-2 rounded-xl text-xs font-bold uppercase hover:bg-slate-700 transition-all">
             <i class="fas fa-chart-pie mr-2"></i> Riepilogo
         </a>
     </div>
@@ -65,7 +65,6 @@
                 data.yearRanges.forEach((range, index) => {
                     const start = range.start === 0 ? left : x.getPixelForValue(range.start);
                     const end = range.end === data.labels.length - 1 ? right : x.getPixelForValue(range.end);
-                    // Colore alternato: uno trasparente, uno leggermente blu/grigio
                     ctx.fillStyle = index % 2 === 0 ? 'rgba(255, 255, 255, 0.03)' : 'rgba(59, 130, 246, 0.05)';
                     ctx.fillRect(start, top, end - start, bottom - top);
                 });
@@ -76,7 +75,6 @@
         async function init() {
             const { data } = await supabaseClient.from('consumi').select('*').order('DataRifornimento', { ascending: true });
             
-            // Logica per identificare cambi mese e anni
             const monthIndices = [];
             const yearRanges = [];
             let currentYearStart = 0;
@@ -86,11 +84,9 @@
                     const curDate = new Date(item.DataRifornimento);
                     const prevDate = new Date(data[index-1].DataRifornimento);
                     
-                    // Cambio Mese
                     if (curDate.getMonth() !== prevDate.getMonth()) {
                         monthIndices.push(index);
                     }
-                    // Cambio Anno
                     if (curDate.getFullYear() !== prevDate.getFullYear()) {
                         yearRanges.push({ start: currentYearStart, end: index - 1 });
                         currentYearStart = index;
