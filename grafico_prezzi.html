@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Dettaglio Prezzi | Meliendro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #0f172a; color: #f8fafc; height: 100vh; overflow: hidden; }
+        .chart-wrapper { height: calc(100vh - 150px); width: 100%; padding: 20px; }
+    </style>
+</head>
+<body class="p-6">
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-2xl font-black uppercase tracking-tighter text-blue-500">Trend Costo Carburante</h1>
+            <p class="text-slate-500 text-xs">Trascina il grafico per scorrere nel tempo</p>
+        </div>
+        <a href="Analytics_Avanzate.html" class="bg-slate-800 px-6 py-2 rounded-xl text-xs font-bold uppercase hover:bg-slate-700 transition-all">
+            <i class="fas fa-chart-pie mr-2"></i> Riepilogo
+        </a>
+    </div>
+
+    <div class="chart-wrapper bg-slate-900/50 rounded-[2rem] border border-slate-800">
+        <canvas id="mainChart"></canvas>
+    </div>
+
+    <script>
+        const SB_URL = 'https://zddtqkvbmqpnxtsflexl.supabase.co'; 
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZHRxa3ZibXFwbnh0c2ZsZXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTIwMDcsImV4cCI6MjA4ODk4ODAwN30.irCKDABvILPdlDbHYrQ06gtPWaa6-95q5lNx2GGKQec';
+        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+        async function init() {
+            const { data } = await supabaseClient.from('consumi').select('*').order('DataRifornimento', { ascending: true });
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(i => new Date(i.DataRifornimento).toLocaleDateString('it-IT')),
+                    datasets: [{
+                        label: 'Prezzo al Litro',
+                        data: data.map(i => i.costolitro),
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true, tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        zoom: { pan: { enabled: true, mode: 'x' }, zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' } }
+                    },
+                    scales: {
+                        y: { grid: { color: '#1e293b' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+        init();
+    </script>
+</body>
+</html>
