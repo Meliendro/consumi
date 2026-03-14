@@ -47,7 +47,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-16">
         <div class="apple-glass p-6 rounded-[2.5rem]">
             <h2 class="section-title mb-4 flex items-center text-[10px]">
-                <i class="fas fa-gas-pump mr-2 text-blue-500"></i> Costo al Litro Puntuale
+                <i class="fas fa-gas-pump mr-2 text-blue-500"></i> Costo €/L (Separatore Mese)
             </h2>
             <div class="chart-container">
                 <canvas id="chartPuntuale"></canvas>
@@ -55,7 +55,7 @@
         </div>
         <div class="apple-glass p-6 rounded-[2.5rem]">
             <h2 class="section-title mb-4 flex items-center text-[10px]">
-                <i class="fas fa-road mr-2 text-emerald-500"></i> KM per Percorsi (Pieno)
+                <i class="fas fa-road mr-2 text-emerald-500"></i> KM tra Rifornimenti
             </h2>
             <div class="chart-container">
                 <canvas id="chartKm"></canvas>
@@ -147,17 +147,16 @@
             }
         };
 
-        // 1. Grafico Puntuale con evidenziazione mesi
+        // 1. Grafico Puntuale con linee cambio mese
         const labelsP = data.map(i => new Date(i.DataRifornimento).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit'}));
         const valuesP = data.map(i => i.costolitro);
         
-        // Calcolo linee di separazione mesi
-        const monthLines = [];
+        const monthLineIndices = [];
         data.forEach((item, index) => {
             if (index > 0) {
-                const currentMonth = new Date(item.DataRifornimento).getMonth();
-                const prevMonth = new Date(data[index-1].DataRifornimento).getMonth();
-                if (currentMonth !== prevMonth) monthLines.push(index);
+                const curM = new Date(item.DataRifornimento).getMonth();
+                const prevM = new Date(data[index-1].DataRifornimento).getMonth();
+                if (curM !== prevM) monthLineIndices.push(index);
             }
         });
 
@@ -171,38 +170,36 @@
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
                     fill: true,
                     tension: 0.3,
-                    pointRadius: 3
+                    pointRadius: 4,
+                    pointBackgroundColor: '#3b82f6'
                 }]
             },
-            options: {
-                ...commonOptions,
-                plugins: {
-                    legend: { display: false },
-                    // Plugin custom per disegnare linee verticali al cambio mese
-                    beforeDraw: (chart) => {
-                        const ctx = chart.ctx;
-                        const xAxis = chart.scales.x;
-                        const yAxis = chart.scales.y;
-                        monthLines.forEach(index => {
-                            const x = xAxis.getPixelForValue(index);
-                            ctx.save();
-                            ctx.beginPath();
-                            ctx.setLineDash([5, 5]);
-                            ctx.moveTo(x, yAxis.top);
-                            ctx.lineTo(x, yAxis.bottom);
-                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-                            ctx.stroke();
-                            ctx.restore();
-                        });
-                    }
+            plugins: [{
+                id: 'monthSeparator',
+                afterDatasetsDraw(chart) {
+                    const {ctx, chartArea: {top, bottom}, scales: {x}} = chart;
+                    ctx.save();
+                    monthLineIndices.forEach(idx => {
+                        const xPos = x.getPixelForValue(idx) - (x.getPixelForValue(idx) - x.getPixelForValue(idx-1))/2;
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                        ctx.setLineDash([5, 5]);
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(xPos, top);
+                        ctx.lineTo(xPos, bottom);
+                        ctx.stroke();
+                    });
+                    ctx.restore();
                 }
-            }
+            }],
+            options: commonOptions
         });
 
-        // 2. Grafico KM per Rifornimento
+        // 2. Grafico KM (Logica corretta: KM attuali - KM record precedente)
         const valuesKm = data.map((item, index) => {
             if (index === 0) return 0;
-            return item.kmattuali - data[index-1].kmattuali;
+            const diff = (parseInt(item.kmattuali) || 0) - (parseInt(data[index-1].kmattuali) || 0);
+            return diff > 0 ? diff : 0;
         });
 
         new Chart(document.getElementById('chartKm'), {
@@ -216,7 +213,8 @@
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
                     fill: true,
                     tension: 0.3,
-                    pointRadius: 3
+                    pointRadius: 4,
+                    pointBackgroundColor: '#10b981'
                 }]
             },
             options: commonOptions
@@ -227,7 +225,7 @@
         data.forEach(i => {
             const m = new Date(i.DataRifornimento).toLocaleString('it-IT', {month:'short', year:'2-digit'});
             if(!mensili[m]) mensili[m] = { somma: 0, count: 0 };
-            mensili[m].somma += i.costolitro;
+            mensili[m].somma += (parseFloat(i.costolitro) || 0);
             mensili[m].count++;
         });
         const labelsM = Object.keys(mensili);
