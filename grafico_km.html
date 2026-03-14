@@ -18,9 +18,9 @@
     <div class="flex justify-between items-center mb-8">
         <div>
             <h1 class="text-2xl font-black uppercase tracking-tighter text-emerald-500">Analisi Chilometrica</h1>
-            <p class="text-slate-500 text-xs">Scorri o usa lo zoom per analizzare i periodi</p>
+            <p class="text-slate-500 text-xs">Usa lo zoom per analizzare i parziali e il totale</p>
         </div>
-        <a href="Analytics_Avanzate.html" class="bg-slate-800 px-6 py-2 rounded-xl text-xs font-bold uppercase hover:bg-slate-700 transition-all">
+        <a href="Riepilogo_statistiche.html" class="bg-slate-800 px-6 py-2 rounded-xl text-xs font-bold uppercase hover:bg-slate-700 transition-all">
             <i class="fas fa-chart-pie mr-2"></i> Riepilogo
         </a>
     </div>
@@ -34,41 +34,115 @@
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZHRxa3ZibXFwbnh0c2ZsZXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTIwMDcsImV4cCI6MjA4ODk4ODAwN30.irCKDABvILPdlDbHYrQ06gtPWaa6-95q5lNx2GGKQec';
         const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
+        // PLUGIN 1: Linee verticali cambio mese
+        const monthSeparatorPlugin = {
+            id: 'monthSeparator',
+            afterDatasetsDraw(chart) {
+                const {ctx, chartArea: {top, bottom}, scales: {x}, data} = chart;
+                if (!data.monthIndices) return;
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 1;
+                data.monthIndices.forEach(idx => {
+                    const xPos = x.getPixelForValue(idx) - (x.getPixelForValue(idx) - x.getPixelForValue(idx-1))/2;
+                    ctx.beginPath(); ctx.moveTo(xPos, top); ctx.lineTo(xPos, bottom); ctx.stroke();
+                });
+                ctx.restore();
+            }
+        };
+
+        // PLUGIN 2: Sfondo colorato per cambio anno
+        const yearBackgroundPlugin = {
+            id: 'yearBackground',
+            beforeDatasetsDraw(chart) {
+                const {ctx, chartArea: {top, bottom, left, right}, scales: {x}, data} = chart;
+                if (!data.yearRanges) return;
+                ctx.save();
+                data.yearRanges.forEach((range, index) => {
+                    const start = range.start === 0 ? left : x.getPixelForValue(range.start);
+                    const end = range.end === data.labels.length - 1 ? right : x.getPixelForValue(range.end);
+                    ctx.fillStyle = index % 2 === 0 ? 'rgba(255, 255, 255, 0.03)' : 'rgba(16, 185, 129, 0.05)';
+                    ctx.fillRect(start, top, end - start, bottom - top);
+                });
+                ctx.restore();
+            }
+        };
+
         async function init() {
             const { data } = await supabaseClient.from('consumi').select('*').order('DataRifornimento', { ascending: true });
             const ctx = document.getElementById('mainChart').getContext('2d');
             
+            const monthIndices = [];
+            const yearRanges = [];
+            let currentYearStart = 0;
+
+            data.forEach((item, index) => {
+                if (index > 0) {
+                    const curDate = new Date(item.DataRifornimento);
+                    const prevDate = new Date(data[index-1].DataRifornimento);
+                    if (curDate.getMonth() !== prevDate.getMonth()) monthIndices.push(index);
+                    if (curDate.getFullYear() !== prevDate.getFullYear()) {
+                        yearRanges.push({ start: currentYearStart, end: index - 1 });
+                        currentYearStart = index;
+                    }
+                }
+            });
+            yearRanges.push({ start: currentYearStart, end: data.length - 1 });
+
             new Chart(ctx, {
-                type: 'line',
                 data: {
                     labels: data.map(i => new Date(i.DataRifornimento).toLocaleDateString('it-IT')),
+                    monthIndices,
+                    yearRanges,
                     datasets: [
                         {
-                            label: 'KM Totali',
-                            data: data.map(i => i.kmattuali),
-                            borderColor: '#f59e0b',
-                            yAxisID: 'yTot',
-                            tension: 0.1
-                        },
-                        {
-                            label: 'KM Parziali',
+                            label: 'Parziali (Barre)',
+                            type: 'bar',
                             data: data.map((i, idx) => idx === 0 ? 0 : i.kmattuali - data[idx-1].kmattuali),
                             backgroundColor: 'rgba(16, 185, 129, 0.4)',
                             borderColor: '#10b981',
-                            fill: true,
-                            type: 'bar',
+                            borderWidth: 1,
                             yAxisID: 'yPar'
+                        },
+                        {
+                            label: 'Trend Totale',
+                            type: 'line',
+                            data: data.map(i => i.kmattuali),
+                            borderColor: '#f59e0b',
+                            borderWidth: 3,
+                            pointRadius: 2,
+                            yAxisID: 'yTot',
+                            tension: 0.1,
+                            fill: false
                         }
                     ]
                 },
+                plugins: [monthSeparatorPlugin, yearBackgroundPlugin],
                 options: {
-                    responsive: true, maintainAspectRatio: false,
+                    responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
-                        zoom: { pan: { enabled: true, mode: 'x' }, zoom: { wheel: { enabled: true }, mode: 'x' } }
+                        zoom: { 
+                            pan: { enabled: true, mode: 'x' }, 
+                            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' } 
+                        },
+                        legend: { labels: { color: '#f8fafc', font: { weight: 'bold' } } }
                     },
                     scales: {
-                        yTot: { position: 'right', grid: { display: false } },
-                        yPar: { position: 'left', grid: { color: '#1e293b' } }
+                        yTot: { 
+                            position: 'right', 
+                            grid: { display: false },
+                            ticks: { color: '#f59e0b' },
+                            title: { display: true, text: 'KM Totali', color: '#f59e0b' }
+                        },
+                        yPar: { 
+                            position: 'left', 
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#10b981' },
+                            title: { display: true, text: 'KM Parziali', color: '#10b981' }
+                        },
+                        x: { ticks: { color: '#64748b' } }
                     }
                 }
             });
