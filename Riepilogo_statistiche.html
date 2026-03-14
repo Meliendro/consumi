@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riepilogo Mensile | Meliendro</title>
+    <title>Analytics Avanzate | Meliendro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
@@ -13,13 +14,22 @@
             font-family: 'Inter', sans-serif; 
             background: radial-gradient(circle at top left, #1e293b, #0f172a);
             color: #f8fafc; min-height: 100vh;
+            scroll-behavior: smooth;
         }
         .apple-glass {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
         .section-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.2em; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
+        
+        /* Scrollbar custom */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
 <body class="p-6 md:p-12">
@@ -27,26 +37,46 @@
 <div class="max-w-6xl mx-auto">
     <div class="flex items-center justify-between mb-12">
         <div>
-            <h1 class="text-4xl font-black italic uppercase tracking-tighter">Report <span class="text-blue-500">Analitico</span></h1>
-            <p class="text-slate-500 text-sm">Analisi temporale dei consumi</p>
+            <h1 class="text-4xl font-black italic uppercase tracking-tighter">Report <span class="text-blue-500 text-5xl">.</span>Analitico</h1>
+            <p class="text-slate-500 text-sm font-medium">Data Visualization & Performance</p>
         </div>
-        <a href="Elenco_rifornimenti.html" class="apple-glass px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all">
-            <i class="fas fa-arrow-left mr-2"></i> Elenco
+        <a href="Elenco_rifornimenti.html" class="apple-glass px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-blue-600/20 hover:border-blue-500/50 transition-all flex items-center">
+            <i class="fas fa-arrow-left mr-2"></i> Torna alla Lista
         </a>
     </div>
 
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+        <div class="apple-glass p-8 rounded-[3rem]">
+            <h2 class="section-title mb-6 flex items-center">
+                <i class="fas fa-gas-pump mr-2 text-blue-500"></i> Andamento Puntuale Prezzo
+            </h2>
+            <div class="chart-container">
+                <canvas id="chartPuntuale"></canvas>
+            </div>
+        </div>
+        <div class="apple-glass p-8 rounded-[3rem]">
+            <h2 class="section-title mb-6 flex items-center">
+                <i class="fas fa-chart-area mr-2 text-purple-500"></i> Media Mensile €/Litri
+            </h2>
+            <div class="chart-container">
+                <canvas id="chartMensile"></canvas>
+            </div>
+        </div>
+    </div>
+
     <div class="mb-16">
-        <h2 class="section-title mb-6">Analisi Mensile</h2>
+        <h2 class="section-title mb-6 px-4">Dettaglio Mensile</h2>
         <div id="container-mensile" class="grid grid-cols-1 gap-4"></div>
     </div>
 
-    <div>
-        <h2 class="section-title mb-6">Riepilogo Annuale</h2>
+    <div class="mb-12">
+        <h2 class="section-title mb-6 px-4">Consolidato Annuale</h2>
         <div id="container-annuale" class="grid grid-cols-1 gap-4"></div>
     </div>
 
-    <div id="loader" class="text-center py-20">
-        <i class="fas fa-circle-notch fa-spin text-blue-500 text-4xl"></i>
+    <div id="loader" class="fixed inset-0 bg-[#0f172a] flex flex-col items-center justify-center z-50">
+        <div class="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Elaborazione Dati</p>
     </div>
 </div>
 
@@ -54,6 +84,8 @@
     const SB_URL = 'https://zddtqkvbmqpnxtsflexl.supabase.co'; 
     const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZHRxa3ZibXFwbnh0c2ZsZXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTIwMDcsImV4cCI6MjA4ODk4ODAwN30.irCKDABvILPdlDbHYrQ06gtPWaa6-95q5lNx2GGKQec';
     const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+    let chartPuntuale, chartMensile;
 
     async function loadStats() {
         try {
@@ -64,10 +96,11 @@
 
             if (error) throw error;
             processData(data);
+            initCharts(data);
         } catch (err) {
             console.error(err);
         } finally {
-            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('loader').style.display = 'none';
         }
     }
 
@@ -98,11 +131,83 @@
             statsAnnuali[anno].count++;
         });
 
-        renderCharts(statsMensili, 'container-mensile');
-        renderCharts(statsAnnuali, 'container-annuale');
+        renderList(statsMensili, 'container-mensile');
+        renderList(statsAnnuali, 'container-annuale');
     }
 
-    function renderCharts(obj, containerId) {
+    function initCharts(data) {
+        const ctxP = document.getElementById('chartPuntuale').getContext('2d');
+        const ctxM = document.getElementById('chartMensile').getContext('2d');
+
+        // Dati per grafico puntuale
+        const labelsP = data.map(i => new Date(i.DataRifornimento).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit'}));
+        const valuesP = data.map(i => i.costolitro);
+
+        // Dati per grafico mensile
+        const mensili = {};
+        data.forEach(i => {
+            const m = new Date(i.DataRifornimento).toLocaleString('it-IT', {month:'short'});
+            if(!mensili[m]) mensili[m] = { somma: 0, count: 0 };
+            mensili[m].somma += i.costolitro;
+            mensili[m].count++;
+        });
+        const labelsM = Object.keys(mensili);
+        const valuesM = labelsM.map(l => (mensili[l].somma / mensili[l].count).toFixed(3));
+
+        // Chart 1: Puntuale
+        chartPuntuale = new Chart(ctxP, {
+            type: 'line',
+            data: {
+                labels: labelsP,
+                datasets: [{
+                    label: 'Costo al Litro',
+                    data: valuesP,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#3b82f6',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                    x: { grid: { display: false }, ticks: { color: '#64748b' } }
+                }
+            }
+        });
+
+        // Chart 2: Media Mensile
+        chartMensile = new Chart(ctxM, {
+            type: 'bar',
+            data: {
+                labels: labelsM,
+                datasets: [{
+                    data: valuesM,
+                    backgroundColor: '#8b5cf6',
+                    borderRadius: 12,
+                    barPercentage: 0.5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                    x: { grid: { display: false }, ticks: { color: '#64748b' } }
+                }
+            }
+        });
+    }
+
+    function renderList(obj, containerId) {
         const container = document.getElementById(containerId);
         container.innerHTML = '';
 
@@ -111,23 +216,23 @@
             const mediaPrezzo = (s.spesa / (s.litri || 1)).toFixed(3);
             
             container.innerHTML += `
-                <div class="apple-glass p-6 rounded-[2.5rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div class="apple-glass p-6 rounded-[2.5rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 transition-all hover:bg-white/[0.05]">
                     <div class="min-w-[180px]">
                         <h3 class="text-xl font-black text-white capitalize">${s.label}</h3>
-                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${s.count} Pieni Effettuati</p>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${s.count} Pieni</p>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
                         <div>
-                            <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">Spesa Totale</p>
+                            <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">Spesa</p>
                             <p class="text-2xl font-black text-white">€ ${s.spesa.toFixed(2)}</p>
                         </div>
                         <div>
-                            <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Litri Totali</p>
+                            <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Litri</p>
                             <p class="text-2xl font-bold text-slate-200">${s.litri.toFixed(1)} <span class="text-sm font-normal text-slate-500">L</span></p>
                         </div>
                         <div>
-                            <p class="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-1">Media Carburante</p>
+                            <p class="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-1">Media</p>
                             <p class="text-2xl font-bold text-slate-200">€ ${mediaPrezzo}</p>
                         </div>
                     </div>
