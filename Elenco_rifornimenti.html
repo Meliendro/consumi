@@ -170,6 +170,12 @@
 
     let lastFetchedData = [];
 
+    // Helper per formattare i KM (senza decimali, punto come separatore migliaia)
+    function formatKM(val) {
+        if (!val && val !== 0) return "-";
+        return Math.round(val).toLocaleString('it-IT', { maximumFractionDigits: 0 });
+    }
+
     async function fetchConsumi() {
         const corpo = document.getElementById('tabella-corpo');
         const loader = document.getElementById('loading-state');
@@ -246,7 +252,7 @@
             corpo.innerHTML += `
                 <tr class="hover:bg-white/40 transition-colors border-b border-white/10 row-month-${monthId}">
                     <td class="p-6 text-sm font-bold text-[#243b53]">${dataF}</td>
-                    <td class="p-6 text-sm font-mono text-blue-600 font-bold">${item.kmattuali?.toLocaleString()} <span class="text-[9px] text-slate-400 font-normal ml-1 uppercase">KM</span></td>
+                    <td class="p-6 text-sm font-mono text-blue-600 font-bold">${formatKM(item.kmattuali)} <span class="text-[9px] text-slate-400 font-normal ml-1 uppercase">KM</span></td>
                     <td class="p-6 text-sm text-slate-600 font-semibold">${item.totlitri} <span class="text-[9px] text-slate-400 uppercase font-normal">L</span></td>
                     <td class="p-6 text-sm font-black text-emerald-600">€ ${item.importototale?.toFixed(2)}</td>
                     <td class="p-6 text-sm font-bold text-purple-600">€ ${item.costolitro?.toFixed(3)}</td>
@@ -274,13 +280,13 @@
 
         const spesa = lista.reduce((a, b) => a + (b.importototale || 0), 0);
         const litri = lista.reduce((a, b) => a + (b.totlitri || 0), 0);
-        const kmMax = lista[lista.length-1].kmattuali;
-        const kmMin = lista[0].kmattuali;
+        const kmMax = lista[lista.length-1].kmattuali || 0;
+        const kmMin = lista[0].kmattuali || 0;
 
         const cards = [
             { label: 'Spesa Totale', val: '€ ' + spesa.toLocaleString('it-IT', {minimumFractionDigits: 2}), color: '#3b82f6' },
             { label: 'Litri Totali', val: litri.toFixed(1) + ' L', color: '#10b981' },
-            { label: 'Percorso Totale', val: (kmMax - kmMin).toLocaleString() + ' KM', color: '#f59e0b' },
+            { label: 'Percorso Totale', val: formatKM(kmMax - kmMin) + ' KM', color: '#f59e0b' },
             { label: 'Media Storica', val: '€ ' + (spesa / (litri || 1)).toFixed(3), color: '#8b5cf6' }
         ];
 
@@ -292,29 +298,25 @@
         `).join('');
     }
 
-    // NUOVA FUNZIONE EXCEL
     function exportToExcel() {
         if (!lastFetchedData || lastFetchedData.length === 0) {
             alert("Nessun dato da esportare");
             return;
         }
 
-        // Preparazione dati puliti per Excel
         const dataToExport = lastFetchedData.map(item => ({
             'Data': new Date(item.DataRifornimento).toLocaleDateString('it-IT'),
-            'Chilometri Totali': item.kmattuali,
+            'Chilometri Totali': Math.round(item.kmattuali),
             'Litri': item.totlitri,
             'Importo (€)': item.importototale,
             'Prezzo/Litro (€)': item.costolitro,
             'Note': item.note || ''
         }));
 
-        // Creazione foglio di lavoro
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Rifornimenti");
 
-        // Nome file dinamico con data
         const dateStr = new Date().toISOString().slice(0, 10);
         XLSX.writeFile(workbook, `Meliendro_Consumi_${dateStr}.xlsx`);
     }
