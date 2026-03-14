@@ -24,39 +24,46 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
         .section-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.2em; }
-        .chart-container { position: relative; height: 300px; width: 100%; }
+        .chart-container { position: relative; height: 260px; width: 100%; }
         
-        /* Scrollbar custom */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
-<body class="p-6 md:p-12">
+<body class="p-4 md:p-12">
 
-<div class="max-w-6xl mx-auto">
-    <div class="flex items-center justify-between mb-12">
+<div class="max-w-7xl mx-auto">
+    <div class="flex flex-col md:flex-row items-center justify-between mb-12 gap-6">
         <div>
             <h1 class="text-4xl font-black italic uppercase tracking-tighter">Report <span class="text-blue-500 text-5xl">.</span>Analitico</h1>
-            <p class="text-slate-500 text-sm font-medium">Data Visualization & Performance</p>
+            <p class="text-slate-500 text-sm font-medium">Data Visualization & Performance KM</p>
         </div>
         <a href="Elenco_rifornimenti.html" class="apple-glass px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-blue-600/20 hover:border-blue-500/50 transition-all flex items-center">
             <i class="fas fa-arrow-left mr-2"></i> Torna alla Lista
         </a>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
-        <div class="apple-glass p-8 rounded-[3rem]">
-            <h2 class="section-title mb-6 flex items-center">
-                <i class="fas fa-gas-pump mr-2 text-blue-500"></i> Andamento Puntuale Prezzo
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-16">
+        <div class="apple-glass p-6 rounded-[2.5rem]">
+            <h2 class="section-title mb-4 flex items-center text-[10px]">
+                <i class="fas fa-gas-pump mr-2 text-blue-500"></i> Costo al Litro Puntuale
             </h2>
             <div class="chart-container">
                 <canvas id="chartPuntuale"></canvas>
             </div>
         </div>
-        <div class="apple-glass p-8 rounded-[3rem]">
-            <h2 class="section-title mb-6 flex items-center">
-                <i class="fas fa-chart-area mr-2 text-purple-500"></i> Media Mensile €/Litri
+        <div class="apple-glass p-6 rounded-[2.5rem]">
+            <h2 class="section-title mb-4 flex items-center text-[10px]">
+                <i class="fas fa-road mr-2 text-emerald-500"></i> KM per Percorsi (Pieno)
+            </h2>
+            <div class="chart-container">
+                <canvas id="chartKm"></canvas>
+            </div>
+        </div>
+        <div class="apple-glass p-6 rounded-[2.5rem]">
+            <h2 class="section-title mb-4 flex items-center text-[10px]">
+                <i class="fas fa-chart-bar mr-2 text-purple-500"></i> Media Mensile €/L
             </h2>
             <div class="chart-container">
                 <canvas id="chartMensile"></canvas>
@@ -64,19 +71,20 @@
         </div>
     </div>
 
-    <div class="mb-16">
-        <h2 class="section-title mb-6 px-4">Dettaglio Mensile</h2>
-        <div id="container-mensile" class="grid grid-cols-1 gap-4"></div>
-    </div>
-
-    <div class="mb-12">
-        <h2 class="section-title mb-6 px-4">Consolidato Annuale</h2>
-        <div id="container-annuale" class="grid grid-cols-1 gap-4"></div>
+    <div class="grid grid-cols-1 gap-12">
+        <div>
+            <h2 class="section-title mb-6 px-4">Dettaglio Mensile</h2>
+            <div id="container-mensile" class="grid grid-cols-1 gap-4"></div>
+        </div>
+        <div>
+            <h2 class="section-title mb-6 px-4">Consolidato Annuale</h2>
+            <div id="container-annuale" class="grid grid-cols-1 gap-4"></div>
+        </div>
     </div>
 
     <div id="loader" class="fixed inset-0 bg-[#0f172a] flex flex-col items-center justify-center z-50">
         <div class="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Elaborazione Dati</p>
+        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Sincronizzazione Dati...</p>
     </div>
 </div>
 
@@ -84,8 +92,6 @@
     const SB_URL = 'https://zddtqkvbmqpnxtsflexl.supabase.co'; 
     const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZHRxa3ZibXFwbnh0c2ZsZXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTIwMDcsImV4cCI6MjA4ODk4ODAwN30.irCKDABvILPdlDbHYrQ06gtPWaa6-95q5lNx2GGKQec';
     const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
-
-    let chartPuntuale, chartMensile;
 
     async function loadStats() {
         try {
@@ -106,7 +112,6 @@
 
     function processData(data) {
         if (!data || data.length === 0) return;
-
         const statsMensili = {};
         const statsAnnuali = {};
 
@@ -116,16 +121,12 @@
             const meseAnno = d.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
             const anno = d.getFullYear();
 
-            if (!statsMensili[monthKey]) {
-                statsMensili[monthKey] = { label: meseAnno, spesa: 0, litri: 0, count: 0 };
-            }
+            if (!statsMensili[monthKey]) statsMensili[monthKey] = { label: meseAnno, spesa: 0, litri: 0, count: 0 };
             statsMensili[monthKey].spesa += (parseFloat(item.importototale) || 0);
             statsMensili[monthKey].litri += (parseFloat(item.totlitri) || 0);
             statsMensili[monthKey].count++;
 
-            if (!statsAnnuali[anno]) {
-                statsAnnuali[anno] = { label: anno, spesa: 0, litri: 0, count: 0 };
-            }
+            if (!statsAnnuali[anno]) statsAnnuali[anno] = { label: anno, spesa: 0, litri: 0, count: 0 };
             statsAnnuali[anno].spesa += (parseFloat(item.importototale) || 0);
             statsAnnuali[anno].litri += (parseFloat(item.totlitri) || 0);
             statsAnnuali[anno].count++;
@@ -136,17 +137,95 @@
     }
 
     function initCharts(data) {
-        const ctxP = document.getElementById('chartPuntuale').getContext('2d');
-        const ctxM = document.getElementById('chartMensile').getContext('2d');
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 } } },
+                x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } }
+            }
+        };
 
-        // Dati per grafico puntuale
+        // 1. Grafico Puntuale con evidenziazione mesi
         const labelsP = data.map(i => new Date(i.DataRifornimento).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit'}));
         const valuesP = data.map(i => i.costolitro);
+        
+        // Calcolo linee di separazione mesi
+        const monthLines = [];
+        data.forEach((item, index) => {
+            if (index > 0) {
+                const currentMonth = new Date(item.DataRifornimento).getMonth();
+                const prevMonth = new Date(data[index-1].DataRifornimento).getMonth();
+                if (currentMonth !== prevMonth) monthLines.push(index);
+            }
+        });
 
-        // Dati per grafico mensile
+        new Chart(document.getElementById('chartPuntuale'), {
+            type: 'line',
+            data: {
+                labels: labelsP,
+                datasets: [{
+                    data: valuesP,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                ...commonOptions,
+                plugins: {
+                    legend: { display: false },
+                    // Plugin custom per disegnare linee verticali al cambio mese
+                    beforeDraw: (chart) => {
+                        const ctx = chart.ctx;
+                        const xAxis = chart.scales.x;
+                        const yAxis = chart.scales.y;
+                        monthLines.forEach(index => {
+                            const x = xAxis.getPixelForValue(index);
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.setLineDash([5, 5]);
+                            ctx.moveTo(x, yAxis.top);
+                            ctx.lineTo(x, yAxis.bottom);
+                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                            ctx.stroke();
+                            ctx.restore();
+                        });
+                    }
+                }
+            }
+        });
+
+        // 2. Grafico KM per Rifornimento
+        const valuesKm = data.map((item, index) => {
+            if (index === 0) return 0;
+            return item.kmattuali - data[index-1].kmattuali;
+        });
+
+        new Chart(document.getElementById('chartKm'), {
+            type: 'line',
+            data: {
+                labels: labelsP,
+                datasets: [{
+                    label: 'KM Percorsi',
+                    data: valuesKm,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3
+                }]
+            },
+            options: commonOptions
+        });
+
+        // 3. Media Mensile
         const mensili = {};
         data.forEach(i => {
-            const m = new Date(i.DataRifornimento).toLocaleString('it-IT', {month:'short'});
+            const m = new Date(i.DataRifornimento).toLocaleString('it-IT', {month:'short', year:'2-digit'});
             if(!mensili[m]) mensili[m] = { somma: 0, count: 0 };
             mensili[m].somma += i.costolitro;
             mensili[m].count++;
@@ -154,86 +233,44 @@
         const labelsM = Object.keys(mensili);
         const valuesM = labelsM.map(l => (mensili[l].somma / mensili[l].count).toFixed(3));
 
-        // Chart 1: Puntuale
-        chartPuntuale = new Chart(ctxP, {
-            type: 'line',
-            data: {
-                labels: labelsP,
-                datasets: [{
-                    label: 'Costo al Litro',
-                    data: valuesP,
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#3b82f6',
-                    pointRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
-                    x: { grid: { display: false }, ticks: { color: '#64748b' } }
-                }
-            }
-        });
-
-        // Chart 2: Media Mensile
-        chartMensile = new Chart(ctxM, {
+        new Chart(document.getElementById('chartMensile'), {
             type: 'bar',
             data: {
                 labels: labelsM,
                 datasets: [{
                     data: valuesM,
                     backgroundColor: '#8b5cf6',
-                    borderRadius: 12,
-                    barPercentage: 0.5
+                    borderRadius: 8
                 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
-                    x: { grid: { display: false }, ticks: { color: '#64748b' } }
-                }
-            }
+            options: commonOptions
         });
     }
 
     function renderList(obj, containerId) {
         const container = document.getElementById(containerId);
         container.innerHTML = '';
-
         Object.keys(obj).sort().reverse().forEach(key => {
             const s = obj[key];
             const mediaPrezzo = (s.spesa / (s.litri || 1)).toFixed(3);
-            
             container.innerHTML += `
-                <div class="apple-glass p-6 rounded-[2.5rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 transition-all hover:bg-white/[0.05]">
+                <div class="apple-glass p-6 rounded-[2rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 transition-all hover:bg-white/[0.05]">
                     <div class="min-w-[180px]">
                         <h3 class="text-xl font-black text-white capitalize">${s.label}</h3>
                         <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${s.count} Pieni</p>
                     </div>
-                    
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
                         <div>
-                            <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">Spesa</p>
-                            <p class="text-2xl font-black text-white">€ ${s.spesa.toFixed(2)}</p>
+                            <p class="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-1">Spesa</p>
+                            <p class="text-xl font-black text-white">€ ${s.spesa.toFixed(2)}</p>
                         </div>
                         <div>
-                            <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Litri</p>
-                            <p class="text-2xl font-bold text-slate-200">${s.litri.toFixed(1)} <span class="text-sm font-normal text-slate-500">L</span></p>
+                            <p class="text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-1">Litri</p>
+                            <p class="text-xl font-bold text-slate-200">${s.litri.toFixed(1)} L</p>
                         </div>
                         <div>
-                            <p class="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-1">Media</p>
-                            <p class="text-2xl font-bold text-slate-200">€ ${mediaPrezzo}</p>
+                            <p class="text-[9px] font-black text-purple-500 uppercase tracking-widest mb-1">Media</p>
+                            <p class="text-xl font-bold text-slate-200">€ ${mediaPrezzo}</p>
                         </div>
                     </div>
                 </div>
