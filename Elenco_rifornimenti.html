@@ -6,6 +6,7 @@
     <title>Log Consumi Auto | Meliendro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
@@ -118,6 +119,10 @@
         </div>
         
         <div class="flex flex-wrap gap-3">
+            <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-emerald-500/20 flex items-center">
+                <i class="fas fa-file-excel mr-3 text-lg"></i> Esporta Excel
+            </button>
+
             <button onclick="window.location.href='Inserisci_rifornimento.html'" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-blue-500/20 flex items-center">
                 <i class="fas fa-plus-circle mr-3 text-lg"></i> Nuovo
             </button>
@@ -136,7 +141,7 @@
 
     <div class="apple-glass rounded-[2.5rem] overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
+            <table class="w-full text-left border-collapse" id="main-table">
                 <thead>
                     <tr class="bg-white/30 border-b border-white/50">
                         <th class="p-6 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Data</th>
@@ -163,6 +168,8 @@
     const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZHRxa3ZibXFwbnh0c2ZsZXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTIwMDcsImV4cCI6MjA4ODk4ODAwN30.irCKDABvILPdlDbHYrQ06gtPWaa6-95q5lNx2GGKQec';
     const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
+    let lastFetchedData = [];
+
     async function fetchConsumi() {
         const corpo = document.getElementById('tabella-corpo');
         const loader = document.getElementById('loading-state');
@@ -177,6 +184,7 @@
 
             if (error) throw error;
             
+            lastFetchedData = data;
             const dataVisualizzazione = [...data].reverse();
             renderTable(dataVisualizzazione, data);
             renderStats(data);
@@ -282,6 +290,33 @@
                 <h2 class="text-2xl font-black" style="color: ${c.color}">${c.val}</h2>
             </div>
         `).join('');
+    }
+
+    // NUOVA FUNZIONE EXCEL
+    function exportToExcel() {
+        if (!lastFetchedData || lastFetchedData.length === 0) {
+            alert("Nessun dato da esportare");
+            return;
+        }
+
+        // Preparazione dati puliti per Excel
+        const dataToExport = lastFetchedData.map(item => ({
+            'Data': new Date(item.DataRifornimento).toLocaleDateString('it-IT'),
+            'Chilometri Totali': item.kmattuali,
+            'Litri': item.totlitri,
+            'Importo (€)': item.importototale,
+            'Prezzo/Litro (€)': item.costolitro,
+            'Note': item.note || ''
+        }));
+
+        // Creazione foglio di lavoro
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Rifornimenti");
+
+        // Nome file dinamico con data
+        const dateStr = new Date().toISOString().slice(0, 10);
+        XLSX.writeFile(workbook, `Meliendro_Consumi_${dateStr}.xlsx`);
     }
 
     window.onload = fetchConsumi;
