@@ -33,34 +33,97 @@
         const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
         async function init() {
-            const { data } = await supabaseClient.from('consumi').select('*').order('DataRifornimento', { ascending: true });
-            
-            const mensili = {};
-            data.forEach(i => {
-                const m = new Date(i.DataRifornimento).toLocaleString('it-IT', {month:'short', year:'2-digit'});
-                if(!mensili[m]) mensili[m] = { somma: 0, count: 0 };
-                mensili[m].somma += (parseFloat(i.costolitro) || 0);
-                mensili[m].count++;
-            });
+            try {
+                // Fetch rapido selezionando solo le colonne necessarie
+                const { data, error } = await supabaseClient
+                    .from('consumi')
+                    .select('DataRifornimento, costolitro')
+                    .order('DataRifornimento', { ascending: true });
 
+                if (error) throw error;
+
+                const mensili = {};
+                
+                // Ottimizzazione ciclo: usiamo un ciclo for classico o for-of per performance migliori su grandi dataset
+                for (const row of data) {
+                    // Cache della data per evitare calcoli multipli
+                    const dateObj = new Date(row.DataRifornimento);
+                    const label = dateObj.toLocaleString('it-IT', { month: 'short', year: '2-digit' });
+                    
+                    if (!mensili[label]) {
+                        mensili[label] = { somma: 0, count: 0 };
+                    }
+                    
+                    const costo = parseFloat(row.costolitro);
+                    if (!isNaN(costo)) {
+                        mensili[label].somma += costo;
+                        mensili[label].count++;
+                    }
+                }
+
+                const labels = Object.keys(mensili);
+                const values = labels.map(l => (mensili[l].somma / mensili[l].count).toFixed(3));
+
+                renderChart(labels, values);
+            } catch (err) {
+                console.error("Errore caricamento dati:", err);
+            }
+        }
+
+        function renderChart(labels, values) {
             const ctx = document.getElementById('mainChart').getContext('2d');
-            new Chart(ctx, {
+            
+            // Distruggiamo eventuali istanze precedenti se necessario (buona pratica)
+            if (window.myChart) window.myChart.destroy();
+
+            window.myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: Object.keys(mensili),
+                    labels: labels,
                     datasets: [{
                         label: 'Media €/L',
-                        data: Object.values(mensili).map(v => (v.somma / v.count).toFixed(3)),
+                        data: values,
                         backgroundColor: '#8b5cf6',
-                        borderRadius: 10
+                        borderRadius: 10,
+                        borderSkipped: false,
+                        hoverBackgroundColor: '#a78bfa'
                     }]
                 },
                 options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: false, grid: { color: '#1e293b' } } }
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: (context) => `Media: € ${context.raw}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: false,
+                            grid: { color: 'rgba(30, 41, 59, 0.5)', drawBorder: false },
+                            ticks: { color: '#64748b', font: { size: 11 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { size: 11 } }
+                        }
+                    }
                 }
             });
         }
+
         init();
     </script>
 </body>
