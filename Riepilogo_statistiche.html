@@ -54,7 +54,7 @@
             </div>
         </div>
 
-        <div class="apple-glass p-6 rounded-[2.5rem] lg:col-span-1">
+        <div class="apple-glass p-6 rounded-[2.5rem]">
             <h2 class="section-title mb-4 flex items-center text-[10px]">
                 <i class="fas fa-road mr-2 text-emerald-500"></i> Progressione & Parziali KM
             </h2>
@@ -86,7 +86,7 @@
 
     <div id="loader" class="fixed inset-0 bg-[#0f172a] flex flex-col items-center justify-center z-50">
         <div class="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Analisi chilometrica in corso...</p>
+        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Sincronizzazione Analitica...</p>
     </div>
 </div>
 
@@ -94,6 +94,28 @@
     const SB_URL = 'https://zddtqkvbmqpnxtsflexl.supabase.co'; 
     const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZHRxa3ZibXFwbnh0c2ZsZXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTIwMDcsImV4cCI6MjA4ODk4ODAwN30.irCKDABvILPdlDbHYrQ06gtPWaa6-95q5lNx2GGKQec';
     const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+    // Plugin per disegnare le linee verticali di cambio mese
+    const monthSeparatorPlugin = {
+        id: 'monthSeparator',
+        afterDatasetsDraw(chart, args, options) {
+            const {ctx, chartArea: {top, bottom}, scales: {x}, data} = chart;
+            if (!data.monthIndices || data.monthIndices.length === 0) return;
+            
+            ctx.save();
+            data.monthIndices.forEach(idx => {
+                const xPos = x.getPixelForValue(idx) - (x.getPixelForValue(idx) - x.getPixelForValue(idx-1))/2;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(xPos, top);
+                ctx.lineTo(xPos, bottom);
+                ctx.stroke();
+            });
+            ctx.restore();
+        }
+    };
 
     async function loadStats() {
         try {
@@ -103,8 +125,19 @@
                 .order('DataRifornimento', { ascending: true });
 
             if (error) throw error;
+            
+            // Trova gli indici dove cambia il mese
+            const monthIndices = [];
+            data.forEach((item, index) => {
+                if (index > 0) {
+                    const curM = new Date(item.DataRifornimento).getMonth();
+                    const prevM = new Date(data[index-1].DataRifornimento).getMonth();
+                    if (curM !== prevM) monthIndices.push(index);
+                }
+            });
+
             processData(data);
-            initCharts(data);
+            initCharts(data, monthIndices);
         } catch (err) {
             console.error(err);
         } finally {
@@ -138,7 +171,7 @@
         renderList(statsAnnuali, 'container-annuale');
     }
 
-    function initCharts(data) {
+    function initCharts(data, monthIndices) {
         const labelsP = data.map(i => new Date(i.DataRifornimento).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit'}));
 
         // --- 1. GRAFICO PREZZO PUNTUALE ---
@@ -146,6 +179,7 @@
             type: 'line',
             data: {
                 labels: labelsP,
+                monthIndices: monthIndices,
                 datasets: [{
                     data: data.map(i => i.costolitro),
                     borderColor: '#3b82f6',
@@ -153,6 +187,7 @@
                     fill: true, tension: 0.3, pointRadius: 3
                 }]
             },
+            plugins: [monthSeparatorPlugin],
             options: {
                 responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
@@ -163,58 +198,52 @@
             }
         });
 
-        // --- 2. GRAFICO PROGRESSIONE KM (DOPPIA LINEA) ---
+        // --- 2. GRAFICO PROGRESSIONE KM ---
         const valuesKmParziali = data.map((item, index) => {
             if (index === 0) return 0;
             const diff = (parseInt(item.kmattuali) || 0) - (parseInt(data[index-1].kmattuali) || 0);
             return diff > 0 ? diff : 0;
         });
-
         const valuesKmTotali = data.map(i => parseInt(i.kmattuali) || 0);
 
         new Chart(document.getElementById('chartKm'), {
             type: 'line',
             data: {
                 labels: labelsP,
+                monthIndices: monthIndices,
                 datasets: [
                     {
-                        label: 'KM Parziali',
+                        label: 'Parziali',
                         data: valuesKmParziali,
                         borderColor: '#10b981',
                         backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        yAxisID: 'y'
+                        fill: true, tension: 0.4, yAxisID: 'y'
                     },
                     {
-                        label: 'KM Totali Prog.',
+                        label: 'Contachilometri',
                         data: valuesKmTotali,
                         borderColor: '#f59e0b',
                         borderDash: [5, 5],
-                        fill: false,
-                        tension: 0.2,
-                        pointRadius: 0,
-                        yAxisID: 'y1'
+                        fill: false, tension: 0.2, pointRadius: 0, yAxisID: 'y1'
                     }
                 ]
             },
+            plugins: [monthSeparatorPlugin],
             options: {
                 responsive: true, maintainAspectRatio: false,
                 plugins: { 
-                    legend: { display: true, labels: { color: '#64748b', size: 10, boxWidth: 10 } } 
+                    legend: { display: true, labels: { color: '#64748b', boxWidth: 10, font: { size: 10 } } } 
                 },
                 scales: {
                     y: {
                         position: 'left',
-                        title: { display: true, text: 'Parziali', color: '#10b981', font: { size: 10 } },
                         grid: { color: 'rgba(255,255,255,0.05)' },
-                        ticks: { color: '#10b981' }
+                        ticks: { color: '#10b981', font: { size: 10 } }
                     },
                     y1: {
                         position: 'right',
-                        title: { display: true, text: 'Totali', color: '#f59e0b', font: { size: 10 } },
                         grid: { display: false },
-                        ticks: { color: '#f59e0b' }
+                        ticks: { color: '#f59e0b', font: { size: 10 } }
                     },
                     x: { ticks: { color: '#64748b', font: { size: 9 } } }
                 }
@@ -261,7 +290,7 @@
                 <div class="apple-glass p-6 rounded-[2rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 transition-all hover:bg-white/[0.05]">
                     <div class="min-w-[180px]">
                         <h3 class="text-xl font-black text-white capitalize">${s.label}</h3>
-                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${s.count} Pieni</p>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${s.count} Rifornimenti</p>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
                         <div>
