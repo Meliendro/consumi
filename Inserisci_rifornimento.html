@@ -14,7 +14,7 @@
             font-family: 'Inter', sans-serif; 
             background: #0f172a; 
             color: #f8fafc; 
-            touch-action: manipulation; /* Migliora la reattività al tocco */
+            touch-action: manipulation;
         }
 
         .form-card { 
@@ -23,14 +23,22 @@
             border-radius: 2rem; 
         }
 
-        /* Ottimizzazione Input per iPhone */
         input { 
             background: #0f172a !important; 
             border: 1px solid #334155 !important; 
             color: white !important; 
             transition: 0.3s; 
-            font-size: 16px !important; /* Cruciale per evitare lo zoom su iOS */
+            font-size: 16px !important; 
             padding: 1rem !important;
+            width: 100%;
+            border-radius: 0.75rem;
+        }
+
+        /* Correzione specifica per il campo DATA su iOS */
+        input[type="date"] {
+            min-height: 3.5rem; /* Assicura che ci sia spazio per il testo della data */
+            display: flex;
+            align-items: center;
         }
 
         input:focus { 
@@ -49,7 +57,6 @@
             display: block; 
         }
 
-        /* Rende i bottoni più facili da cliccare */
         .btn-large {
             height: 60px;
             display: flex;
@@ -70,28 +77,28 @@
         <form id="rifornimentoForm" class="space-y-5">
             <div>
                 <label>Data Rifornimento</label>
-                <input type="date" id="DataRifornimento" required class="w-full rounded-xl">
+                <input type="date" id="DataRifornimento" required>
             </div>
 
             <div>
                 <label>Chilometri Attuali</label>
-                <input type="number" id="kmattuali" inputmode="numeric" placeholder="es. 45000" required class="w-full rounded-xl">
+                <input type="number" id="kmattuali" inputmode="numeric" placeholder="es. 45000" required>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label>Importo (€)</label>
-                    <input type="number" step="0.01" id="importototale" inputmode="decimal" placeholder="50.00" required class="w-full rounded-xl" oninput="autoCalcolo('importo')">
+                    <input type="number" step="0.01" id="importototale" inputmode="decimal" placeholder="50.00" required oninput="autoCalcolo('importo')">
                 </div>
                 <div>
                     <label>Prezzo (€/L)</label>
-                    <input type="number" step="0.001" id="costolitro" inputmode="decimal" placeholder="1.750" required class="w-full rounded-xl" oninput="autoCalcolo('prezzo')">
+                    <input type="number" step="0.001" id="costolitro" inputmode="decimal" placeholder="1.750" required oninput="autoCalcolo('prezzo')">
                 </div>
             </div>
 
             <div class="bg-slate-800/80 p-5 rounded-2xl border border-blue-500/30">
                 <label class="text-blue-400">Litri Calcolati</label>
-                <input type="number" step="0.01" id="totlitri" inputmode="decimal" placeholder="0.00" required class="w-full rounded-xl font-black text-blue-400 text-xl" oninput="autoCalcolo('litri')">
+                <input type="number" step="0.01" id="totlitri" inputmode="decimal" placeholder="0.00" required class="font-black text-blue-400 text-xl" oninput="autoCalcolo('litri')">
             </div>
 
             <div class="pt-2 flex flex-col gap-4">
@@ -151,7 +158,6 @@
                 .insert([record]);
 
             if (error) throw error;
-
             window.location.href = 'Elenco_rifornimenti.html';
         } catch (err) {
             alert("Errore: " + err.message);
