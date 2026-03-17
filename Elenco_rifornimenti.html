@@ -70,6 +70,11 @@
             background: rgba(255, 255, 255, 0.6);
         }
 
+        .year-divider {
+            background: #1e293b;
+            color: white;
+        }
+
         .month-pill {
             background: white;
             padding: 8px 16px;
@@ -120,7 +125,7 @@
         
         <div class="flex flex-wrap gap-3">
             <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-emerald-500/20 flex items-center">
-                <i class="fas fa-file-excel mr-3 text-lg"></i> Esporta Excel
+                <i class="fas fa-file-excel mr-3 text-lg"></i> Esporta
             </button>
 
             <button onclick="window.location.href='Inserisci_rifornimento.html'" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-blue-500/20 flex items-center">
@@ -209,62 +214,93 @@
         const corpo = document.getElementById('tabella-corpo');
         let htmlBuffer = "";
         
-        // Calcoliamo i totali mensili in anticipo per efficienza
-        const mensili = {};
+        // Raggruppamento dati per Anno -> Mese
+        const struttura = {};
         data.forEach(item => {
             const d = new Date(item.DataRifornimento);
-            const monthLabel = d.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
-            if (!mensili[monthLabel]) mensili[monthLabel] = { spesa: 0, litri: 0, records: [] };
-            mensili[monthLabel].spesa += (item.importototale || 0);
-            mensili[monthLabel].litri += (item.totlitri || 0);
-            mensili[monthLabel].records.push(item);
+            const anno = d.getFullYear();
+            const meseLabel = d.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
+            
+            if (!struttura[anno]) struttura[anno] = { spesa: 0, litri: 0, mesi: {}, kmMin: item.kmattuali, kmMax: item.kmattuali };
+            if (!struttura[anno].mesi[meseLabel]) struttura[anno].mesi[meseLabel] = { spesa: 0, litri: 0, count: 0, records: [] };
+            
+            struttura[anno].spesa += (item.importototale || 0);
+            struttura[anno].litri += (item.totlitri || 0);
+            struttura[anno].kmMin = Math.min(struttura[anno].kmMin, item.kmattuali);
+            struttura[anno].kmMax = Math.max(struttura[anno].kmMax, item.kmattuali);
+
+            struttura[anno].mesi[meseLabel].spesa += (item.importototale || 0);
+            struttura[anno].mesi[meseLabel].litri += (item.totlitri || 0);
+            struttura[anno].mesi[meseLabel].count += 1;
+            struttura[anno].mesi[meseLabel].records.push(item);
         });
 
-        // Ordiniamo i mesi dal più recente al più vecchio
-        const mesiOrdinati = Object.keys(mensili).reverse();
+        const anniOrdinati = Object.keys(struttura).sort().reverse();
 
-        mesiOrdinati.forEach(monthLabel => {
-            const mData = mensili[monthLabel];
-            const monthId = monthLabel.replace(/\s+/g, '-');
-            const mediaMese = (mData.spesa / (mData.litri || 1)).toFixed(3);
-
-            // Aggiungi Header Mese
+        anniOrdinati.forEach(anno => {
+            const aData = struttura[anno];
+            
+            // RIGA TOTALE ANNO
             htmlBuffer += `
-                <tr class="month-summary-row border-t border-white/40" onclick="toggleMonth('${monthId}', this)">
-                    <td colspan="6" class="p-6">
-                        <div class="flex flex-wrap items-center justify-between gap-6">
-                            <div class="flex items-center gap-4">
-                                <i class="fas fa-chevron-down text-slate-400 chevron-rotate"></i>
-                                <span class="month-label">${monthLabel}</span>
-                            </div>
-                            <div class="flex flex-wrap gap-4">
-                                <div class="month-pill"><span class="month-stat-label">Spesa</span><span class="month-stat-val text-blue-600">€ ${mData.spesa.toFixed(2)}</span></div>
-                                <div class="month-pill"><span class="month-stat-label">Litri</span><span class="month-stat-val text-emerald-600">${mData.litri.toFixed(1)} L</span></div>
-                                <div class="month-pill"><span class="month-stat-label">Media</span><span class="month-stat-val text-purple-600">€ ${mediaMese}</span></div>
+                <tr class="year-divider">
+                    <td colspan="6" class="p-4 px-8">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xl font-black uppercase tracking-widest">${anno}</span>
+                            <div class="flex gap-6 text-[11px] font-bold uppercase tracking-wider opacity-90">
+                                <span>Spesa: € ${aData.spesa.toFixed(2)}</span>
+                                <span>Litri: ${aData.litri.toFixed(1)}</span>
+                                <span>KM: ${formatKM(aData.kmMax - aData.kmMin)}</span>
                             </div>
                         </div>
                     </td>
                 </tr>
             `;
 
-            // Aggiungi Righe (mostrate in ordine decrescente di data nel mese)
-            mData.records.reverse().forEach(item => {
-                const dateF = new Date(item.DataRifornimento).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', year:'2-digit'});
+            const mesiOrdinati = Object.keys(aData.mesi).reverse();
+            mesiOrdinati.forEach(meseLabel => {
+                const mData = aData.mesi[meseLabel];
+                const monthId = meseLabel.replace(/\s+/g, '-');
+                const mediaMese = (mData.spesa / (mData.litri || 1)).toFixed(3);
+
+                // HEADER MESE
                 htmlBuffer += `
-                    <tr class="hover:bg-white/40 transition-colors border-b border-white/10 row-month-${monthId}">
-                        <td class="p-6 text-sm font-bold text-[#243b53]">${dateF}</td>
-                        <td class="p-6 text-sm font-mono text-blue-600 font-bold">${formatKM(item.kmattuali)} <span class="text-[9px] text-slate-400 font-normal ml-1 uppercase">KM</span></td>
-                        <td class="p-6 text-sm text-slate-600 font-semibold">${item.totlitri} <span class="text-[9px] text-slate-400 uppercase font-normal">L</span></td>
-                        <td class="p-6 text-sm font-black text-emerald-600">€ ${item.importototale?.toFixed(2)}</td>
-                        <td class="p-6 text-sm font-bold text-purple-600">€ ${item.costolitro?.toFixed(3)}</td>
-                        <td class="p-6 text-right">
-                            <div class="flex justify-end gap-2">
-                                <button onclick="window.location.href='Modifica_rifornimento.html?id=${item.id}'" class="btn-mgmt btn-edit"><i class="fas fa-pencil-alt text-xs"></i></button>
-                                <button onclick="elimina(${item.id})" class="btn-mgmt btn-delete"><i class="fas fa-trash-alt text-xs"></i></button>
+                    <tr class="month-summary-row border-t border-white/40" onclick="toggleMonth('${monthId}', this)">
+                        <td colspan="6" class="p-6">
+                            <div class="flex flex-wrap items-center justify-between gap-6">
+                                <div class="flex items-center gap-4">
+                                    <i class="fas fa-chevron-down text-slate-400 chevron-rotate"></i>
+                                    <span class="month-label">${meseLabel}</span>
+                                </div>
+                                <div class="flex flex-wrap gap-4">
+                                    <div class="month-pill"><span class="month-stat-label">Rifornimenti</span><span class="month-stat-val text-slate-700">${mData.count}</span></div>
+                                    <div class="month-pill"><span class="month-stat-label">Spesa</span><span class="month-stat-val text-blue-600">€ ${mData.spesa.toFixed(2)}</span></div>
+                                    <div class="month-pill"><span class="month-stat-label">Litri</span><span class="month-stat-val text-emerald-600">${mData.litri.toFixed(1)} L</span></div>
+                                    <div class="month-pill"><span class="month-stat-label">Media</span><span class="month-stat-val text-purple-600">€ ${mediaMese}</span></div>
+                                </div>
                             </div>
                         </td>
                     </tr>
                 `;
+
+                // RIGHE SINGOLE
+                mData.records.reverse().forEach(item => {
+                    const dateF = new Date(item.DataRifornimento).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', year:'2-digit'});
+                    htmlBuffer += `
+                        <tr class="hover:bg-white/40 transition-colors border-b border-white/10 row-month-${monthId}">
+                            <td class="p-6 text-sm font-bold text-[#243b53]">${dateF}</td>
+                            <td class="p-6 text-sm font-mono text-blue-600 font-bold">${formatKM(item.kmattuali)} <span class="text-[9px] text-slate-400 font-normal ml-1 uppercase">KM</span></td>
+                            <td class="p-6 text-sm text-slate-600 font-semibold">${item.totlitri} <span class="text-[9px] text-slate-400 uppercase font-normal">L</span></td>
+                            <td class="p-6 text-sm font-black text-emerald-600">€ ${item.importototale?.toFixed(2)}</td>
+                            <td class="p-6 text-sm font-bold text-purple-600">€ ${item.costolitro?.toFixed(3)}</td>
+                            <td class="p-6 text-right">
+                                <div class="flex justify-end gap-2">
+                                    <button onclick="window.location.href='Modifica_rifornimento.html?id=${item.id}'" class="btn-mgmt btn-edit"><i class="fas fa-pencil-alt text-xs"></i></button>
+                                    <button onclick="elimina(${item.id})" class="btn-mgmt btn-delete"><i class="fas fa-trash-alt text-xs"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
             });
         });
 
@@ -284,8 +320,8 @@
 
         const spesa = lista.reduce((a, b) => a + (b.importototale || 0), 0);
         const litri = lista.reduce((a, b) => a + (b.totlitri || 0), 0);
-        const kmMax = lista[lista.length-1].kmattuali || 0;
-        const kmMin = lista[0].kmattuali || 0;
+        const kmMax = Math.max(...lista.map(i => i.kmattuali));
+        const kmMin = Math.min(...lista.map(i => i.kmattuali));
 
         const cards = [
             { label: 'Spesa Totale', val: '€ ' + spesa.toLocaleString('it-IT', {minimumFractionDigits: 2}), color: '#3b82f6' },
