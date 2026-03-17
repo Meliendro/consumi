@@ -73,6 +73,12 @@
         .year-divider {
             background: #1e293b;
             color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .year-divider:hover {
+            background: #334155;
         }
 
         .month-pill {
@@ -204,6 +210,27 @@
         }
     }
 
+    function toggleYear(year, headerElement) {
+        headerElement.classList.toggle('collapsed');
+        // Trova tutti i mesi che appartengono a quell'anno
+        const monthHeaders = document.querySelectorAll(`.month-header-year-${year}`);
+        monthHeaders.forEach(mh => {
+            const monthId = mh.getAttribute('data-month-id');
+            const rows = document.querySelectorAll(`.row-month-${monthId}`);
+            
+            if (headerElement.classList.contains('collapsed')) {
+                mh.classList.add('row-hidden');
+                rows.forEach(r => r.classList.add('row-hidden'));
+            } else {
+                mh.classList.remove('row-hidden');
+                // Se l'anno viene aperto, i mesi rimangono chiusi per default o aperti? 
+                // Di solito si preferisce che i mesi rimangano chiusi o mantengano il loro stato.
+                // Qui resettiamo i mesi come chiusi per pulizia.
+                mh.classList.add('collapsed');
+            }
+        });
+    }
+
     function toggleMonth(monthId, headerElement) {
         const rows = document.querySelectorAll(`.row-month-${monthId}`);
         headerElement.classList.toggle('collapsed');
@@ -214,18 +241,18 @@
         const corpo = document.getElementById('tabella-corpo');
         let htmlBuffer = "";
         
-        // Raggruppamento dati per Anno -> Mese
         const struttura = {};
         data.forEach(item => {
             const d = new Date(item.DataRifornimento);
             const anno = d.getFullYear();
             const meseLabel = d.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
             
-            if (!struttura[anno]) struttura[anno] = { spesa: 0, litri: 0, mesi: {}, kmMin: item.kmattuali, kmMax: item.kmattuali };
+            if (!struttura[anno]) struttura[anno] = { spesa: 0, litri: 0, totalCount: 0, mesi: {}, kmMin: item.kmattuali, kmMax: item.kmattuali };
             if (!struttura[anno].mesi[meseLabel]) struttura[anno].mesi[meseLabel] = { spesa: 0, litri: 0, count: 0, records: [] };
             
             struttura[anno].spesa += (item.importototale || 0);
             struttura[anno].litri += (item.totlitri || 0);
+            struttura[anno].totalCount += 1;
             struttura[anno].kmMin = Math.min(struttura[anno].kmMin, item.kmattuali);
             struttura[anno].kmMax = Math.max(struttura[anno].kmMax, item.kmattuali);
 
@@ -240,15 +267,18 @@
         anniOrdinati.forEach(anno => {
             const aData = struttura[anno];
             
-            // RIGA TOTALE ANNO
             htmlBuffer += `
-                <tr class="year-divider">
+                <tr class="year-divider" onclick="toggleYear('${anno}', this)">
                     <td colspan="6" class="p-4 px-8">
                         <div class="flex justify-between items-center">
-                            <span class="text-xl font-black uppercase tracking-widest">${anno}</span>
+                            <div class="flex items-center gap-4">
+                                <i class="fas fa-chevron-down text-white/50 chevron-rotate"></i>
+                                <span class="text-xl font-black uppercase tracking-widest">${anno}</span>
+                            </div>
                             <div class="flex gap-6 text-[11px] font-bold uppercase tracking-wider opacity-90">
-                                <span>Spesa: € ${aData.spesa.toFixed(2)}</span>
-                                <span>Litri: ${aData.litri.toFixed(1)}</span>
+                                <span>Rif: ${aData.totalCount}</span>
+                                <span class="hidden md:inline">Spesa: € ${aData.spesa.toFixed(2)}</span>
+                                <span class="hidden md:inline">Litri: ${aData.litri.toFixed(1)}</span>
                                 <span>KM: ${formatKM(aData.kmMax - aData.kmMin)}</span>
                             </div>
                         </div>
@@ -262,9 +292,10 @@
                 const monthId = meseLabel.replace(/\s+/g, '-');
                 const mediaMese = (mData.spesa / (mData.litri || 1)).toFixed(3);
 
-                // HEADER MESE
                 htmlBuffer += `
-                    <tr class="month-summary-row border-t border-white/40" onclick="toggleMonth('${monthId}', this)">
+                    <tr class="month-summary-row border-t border-white/40 month-header-year-${anno} collapsed" 
+                        data-month-id="${monthId}"
+                        onclick="toggleMonth('${monthId}', this)">
                         <td colspan="6" class="p-6">
                             <div class="flex flex-wrap items-center justify-between gap-6">
                                 <div class="flex items-center gap-4">
@@ -282,11 +313,10 @@
                     </tr>
                 `;
 
-                // RIGHE SINGOLE
                 mData.records.reverse().forEach(item => {
                     const dateF = new Date(item.DataRifornimento).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', year:'2-digit'});
                     htmlBuffer += `
-                        <tr class="hover:bg-white/40 transition-colors border-b border-white/10 row-month-${monthId}">
+                        <tr class="hover:bg-white/40 transition-colors border-b border-white/10 row-month-${monthId} row-hidden">
                             <td class="p-6 text-sm font-bold text-[#243b53]">${dateF}</td>
                             <td class="p-6 text-sm font-mono text-blue-600 font-bold">${formatKM(item.kmattuali)} <span class="text-[9px] text-slate-400 font-normal ml-1 uppercase">KM</span></td>
                             <td class="p-6 text-sm text-slate-600 font-semibold">${item.totlitri} <span class="text-[9px] text-slate-400 uppercase font-normal">L</span></td>
