@@ -47,6 +47,12 @@
         .year-group.active .months-container { display: flex; }
         .year-group.active .chevron { transform: rotate(180deg); }
         .chevron { transition: transform 0.3s; }
+
+        .btn-expand {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .btn-expand:hover { color: #3b82f6; }
     </style>
 </head>
 <body class="p-4 md:p-12">
@@ -66,15 +72,26 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-16">
         <div class="apple-glass p-6 rounded-[2.5rem] relative">
-            <h2 class="section-title mb-4 flex items-center text-[10px]"><i class="fas fa-gas-pump mr-2 text-blue-500"></i> Costo €/L (Trend)</h2>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="section-title flex items-center text-[10px]"><i class="fas fa-gas-pump mr-2 text-blue-500"></i> Costo €/L (Trend)</h2>
+                <i class="fas fa-external-link-alt text-slate-500 text-xs btn-expand" onclick="openChart('chartPuntuale')"></i>
+            </div>
             <div class="chart-container"><canvas id="chartPuntuale"></canvas></div>
         </div>
+
         <div class="apple-glass p-6 rounded-[2.5rem] relative">
-            <h2 class="section-title mb-4 flex items-center text-[10px]"><i class="fas fa-road mr-2 text-emerald-500"></i> Progressione KM</h2>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="section-title flex items-center text-[10px]"><i class="fas fa-road mr-2 text-emerald-500"></i> Progressione KM</h2>
+                <i class="fas fa-external-link-alt text-slate-500 text-xs btn-expand" onclick="openChart('chartKm')"></i>
+            </div>
             <div class="chart-container"><canvas id="chartKm"></canvas></div>
         </div>
+
         <div class="apple-glass p-6 rounded-[2.5rem] relative">
-            <h2 class="section-title mb-4 flex items-center text-[10px]"><i class="fas fa-chart-bar mr-2 text-purple-500"></i> Media Mensile</h2>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="section-title flex items-center text-[10px]"><i class="fas fa-chart-bar mr-2 text-purple-500"></i> Media Mensile</h2>
+                <i class="fas fa-external-link-alt text-slate-500 text-xs btn-expand" onclick="openChart('chartMensile')"></i>
+            </div>
             <div class="chart-container"><canvas id="chartMensile"></canvas></div>
         </div>
     </div>
@@ -101,6 +118,14 @@
     const SB_URL = 'https://zddtqkvbmqpnxtsflexl.supabase.co'; 
     const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZHRxa3ZibXFwbnh0c2ZsZXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTIwMDcsImV4cCI6MjA4ODk4ODAwN30.irCKDABvILPdlDbHYrQ06gtPWaa6-95q5lNx2GGKQec';
     const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+    // Funzione per aprire il grafico in una nuova finestra
+    function openChart(chartId) {
+        const canvas = document.getElementById(chartId);
+        const dataUrl = canvas.toDataURL('image/png');
+        const win = window.open();
+        win.document.write(`<title>Grafico ${chartId}</title><body style="background:#0f172a; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;"><img src="${dataUrl}" style="max-width:100%; border-radius:20px; box-shadow:0 20px 50px rgba(0,0,0,0.5);"></body>`);
+    }
 
     async function loadStats() {
         try {
